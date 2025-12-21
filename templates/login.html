@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5 text-center glass-card p-5">
+        <div class="mb-4">
+            <i class="fas fa-user-circle fa-4x text-orange"></i>
+        </div>
+        <h3 class="fw-bold">Bienvenue chez Offranel 🍊</h3>
+        <p class="text-muted">Connectez-vous pour voir les offres exclusives</p>
+        <button id="googleBtn" class="btn btn-dark w-100 py-3 rounded-pill fw-bold mt-3 shadow">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" class="me-2">
+            Continuer avec Google 🌈
+        </button>
+    </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDp2Wbtj_pUEmeH6B7DKQlOAzaW00jr1dE",
+    authDomain: "malaki-offranel.firebaseapp.com",
+    projectId: "malaki-offranel",
+    storageBucket: "malaki-offranel.firebasestorage.app",
+    appId: "1:255909746580:web:5b97ab8194520bf783a181"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  document.getElementById('googleBtn').onclick = async () => {
+    try {
+        const result = await signInWithPopup(auth, provider);
+        await fetch('/set_session', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                uid: result.user.uid, name: result.user.displayName,
+                email: result.user.email, photo: result.user.photoURL
+            })
+        });
+        window.location.href = "/";
+    } catch (e) { alert("Erreur: " + e.message); }
+  };
+</script>
+{% endblock %}

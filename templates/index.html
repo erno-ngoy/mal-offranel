@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row">
+    {% for product in products %}
+    <div class="col-md-3 mb-4">
+        <div class="card h-100 shadow-sm border-0" style="border-radius: 20px; overflow: hidden;">
+            <img src="{{ product.images[0] }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+            <div class="card-body">
+                <h6 class="fw-bold">{{ product.title }}</h6>
+                <p class="text-orange fw-bold">{{ product.price }} {{ product.currency }}</p>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="/produit/{{ product.id }}" class="btn btn-sm btn-light rounded-pill px-3">Détails</a>
+
+                    {% if session.get('role') == 'admin' %}
+                    <form action="/supprimer/{{ product.id }}" method="POST" onsubmit="return confirm('Supprimer cet article ?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger border-0">🗑️</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

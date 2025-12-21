@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+:root {
+    --offranel-orange: #FF6B00;
+    --offranel-light-orange: #FFF5ED;
+    --offranel-dark: #1A1A1A;
+}
+
+body {
+    background-color: #f8f9fa;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Thème Orange */
+.text-orange { color: var(--offranel-orange) !important; }
+.bg-orange { background-color: var(--offranel-orange) !important; }
+.btn-orange {
+    background-color: var(--offranel-orange);
+    color: white;
+    border-radius: 50px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+.btn-orange:hover {
+    background-color: #e66000;
+    color: white;
+    transform: scale(1.05);
+}
+
+/* Cartes Produits */
+.product-card {
+    border: none;
+    border-radius: 20px;
+    background: white;
+    transition: all 0.3s ease;
+}
+.product-card:hover {
+    box-shadow: 0 15px 30px rgba(255, 107, 0, 0.15);
+}
+
+/* Skeleton Loading (YouTube Style) */
+.skeleton {
+    background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+    background-size: 200% 100%;
+    animation: 1.5s shine linear infinite;
+    border-radius: 15px;
+}
+@keyframes shine {
+    to { background-position-x: -200%; }
+}
+
+/* Glassmorphism */
+.glass-card {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border-radius: 25px;
+    border: 1px solid rgba(255, 107, 0, 0.1);
+}

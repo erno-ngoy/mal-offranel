@@ -31,7 +31,7 @@ db = firestore.client()
 
 @app.route('/')
 def index():
-    products_stream = db.collection('products').order_of('created_at', direction='DESCENDING').stream()
+    products_stream = db.collection('products').order_by('created_at', direction='DESCENDING').stream()
     products = []
     for doc in products_stream:
         p = doc.to_dict()

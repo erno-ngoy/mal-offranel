@@ -2,13 +2,28 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 import firebase_admin
 from firebase_admin import credentials, firestore
 import datetime
+import os
+import json
 
 app = Flask(__name__)
 app.secret_key = "offranel_orange_secret"
 
-# 1. Initialisation Firestore (Sans Storage pour éviter la carte bancaire)
-cred = credentials.Certificate("serviceAccountKey.json")
-firebase_admin.initialize_app(cred)
+# --- INITIALISATION FIREBASE ( Railway + Local ) ---
+if not firebase_admin._apps:
+    # On cherche d'abord la variable d'environnement (pour Railway)
+    service_account_info = os.environ.get('FIREBASE_CONFIG')
+
+    if service_account_info:
+        # Configuration pour Railway
+        cred_dict = json.loads(service_account_info)
+        cred = credentials.Certificate(cred_dict)
+    else:
+        # Configuration pour ton PC local
+        # Assure-toi que le fichier est bien présent dans ton dossier
+        cred = credentials.Certificate("serviceAccountKey.json")
+
+    firebase_admin.initialize_app(cred)
+
 db = firestore.client()
 
 
@@ -16,8 +31,7 @@ db = firestore.client()
 
 @app.route('/')
 def index():
-    # On récupère les produits et on injecte l'ID du document pour les liens
-    products_stream = db.collection('products').order_by('created_at', direction='DESCENDING').stream()
+    products_stream = db.collection('products').order_of('created_at', direction='DESCENDING').stream()
     products = []
     for doc in products_stream:
         p = doc.to_dict()
@@ -38,7 +52,6 @@ def set_session():
     user_ref = db.collection('users').document(uid)
     user_doc = user_ref.get()
 
-    # Si l'utilisateur n'existe pas, on le crée avec le rôle 'user'
     if not user_doc.exists:
         role = 'user'
         user_ref.set({
@@ -50,7 +63,6 @@ def set_session():
     else:
         role = user_doc.to_dict().get('role', 'user')
 
-    # Mise à jour de la session Flask
     session.update({
         'user_id': uid,
         'name': data.get('name'),
@@ -60,7 +72,6 @@ def set_session():
     return jsonify({"status": "ok", "role": role})
 
 
-# --- ROUTE PROFIL (CORRIGÉE POUR L'ERREUR 404) ---
 @app.route('/profile')
 @app.route('/profile/<uid>')
 def profile(uid=None):
@@ -69,11 +80,8 @@ def profile(uid=None):
     return render_template('profile.html')
 
 
-# --- GESTION DES PRODUITS ---
-
 @app.route('/publier', methods=['GET', 'POST'])
 def publier():
-    # Sécurité : Seul l'admin accède à cette route
     if session.get('role') != 'admin':
         return redirect(url_for('index'))
 
@@ -82,9 +90,9 @@ def publier():
         db.collection('products').add({
             'title': data.get('title'),
             'price': data.get('price'),
-            'currency': data.get('currency'),  # USD ou CDF
+            'currency': data.get('currency'),
             'description': data.get('description'),
-            'images': [data.get('photo_url')],  # Image en format texte Base64
+            'images': [data.get('photo_url')],
             'created_at': datetime.datetime.now()
         })
         return jsonify({"status": "success"})
@@ -114,5 +122,4 @@ def logout():
 
 
 if __name__ == '__main__':
-    # Lancement du serveur
     app.run(debug=True)

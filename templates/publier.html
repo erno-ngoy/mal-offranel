@@ -3,61 +3,62 @@
 <div class="row g-4">
     <div class="col-lg-7">
         <div class="glass-card p-4 bg-white shadow" style="border-radius: 20px; border: 2px solid #FF6B00;">
-            <h3 class="fw-bold mb-4" style="color: #FF6B00;">📢 Créer une annonce</h3>
+            <h3 class="fw-bold mb-4" style="color: #FF6B00;">📦 Publier un article</h3>
+
             <form id="uploadForm">
                 <div class="mb-3">
-                    <label class="small fw-bold">Titre de l'article</label>
-                    <input type="text" id="title" class="form-control rounded-pill border-orange" placeholder="Ex: iPhone 13 Pro Max" required>
+                    <label class="small fw-bold">Nom du produit</label>
+                    <input type="text" id="title" class="form-control rounded-pill border-orange" placeholder="Ex: Chaussure Nike" required>
                 </div>
 
                 <div class="row">
-                    <div class="col-md-8 mb-3">
-                        <label class="small fw-bold">Prix de vente</label>
-                        <input type="number" id="price" class="form-control rounded-pill border-orange" placeholder="0.00" required>
+                    <div class="col-7 mb-3">
+                        <label class="small fw-bold">Prix</label>
+                        <input type="number" id="price" class="form-control rounded-pill border-orange" placeholder="0" required>
                     </div>
-                    <div class="col-md-4 mb-3">
+                    <div class="col-5 mb-3">
                         <label class="small fw-bold">Devise</label>
                         <select id="currency" class="form-select rounded-pill border-orange">
-                            <option value="$">USD ($)</option>
-                            <option value="FC">CDF (FC)</option>
+                            <option value="$">$ USD</option>
+                            <option value="FC">FC CDF</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="small fw-bold">Photos (Max 1 photo)</label>
-                    <input type="file" id="fileInput" class="form-control rounded-pill" accept="image/*">
-                    <div id="thumbContainer" class="d-flex flex-wrap gap-2 mt-2"></div>
+                    <label class="small fw-bold">Photo de l'article 📸</label>
+                    <input type="file" id="fileInput" class="form-control rounded-pill" accept="image/*" required>
                 </div>
 
                 <div class="mb-3">
-                    <label class="small fw-bold">Description du produit</label>
-                    <textarea id="description" class="form-control rounded-4 border-orange" rows="4" placeholder="État du produit, caractéristiques..."></textarea>
+                    <label class="small fw-bold">Description 📝</label>
+                    <textarea id="description" class="form-control rounded-4 border-orange" rows="3" placeholder="Détails..."></textarea>
                 </div>
 
                 <button type="submit" id="btnSubmit" class="btn btn-orange w-100 py-3 rounded-pill fw-bold shadow">
-                    PUBLIER MAINTENANT 🚀
+                    Lancer la vente ! 🚀
                 </button>
             </form>
+
             <div id="loader" class="text-center mt-3 d-none">
                 <div class="spinner-border text-orange"></div>
-                <p class="text-orange mt-2 fw-bold">Envoi vers le catalogue...</p>
+                <p class="text-orange small mt-2 fw-bold">Publication en cours...</p>
             </div>
         </div>
     </div>
 
     <div class="col-lg-5">
         <div class="sticky-top" style="top: 100px;">
-            <h5 class="text-center text-muted fw-bold mb-3">Aperçu de votre carte article</h5>
-            <div class="product-card shadow-lg mx-auto" style="max-width: 350px; border-radius: 20px; overflow: hidden; background: #fff;">
-                <img id="previewImg" src="https://placehold.co/400x400?text=Votre+Photo" style="width: 100%; height: 280px; object-fit: cover;">
+            <h5 class="text-center text-muted small fw-bold mb-3">APERÇU DU CLIENT ✨</h5>
+            <div class="product-card shadow-lg mx-auto bg-white" style="max-width: 320px; border-radius: 15px; overflow: hidden;">
+                <img id="previewImg" src="https://placehold.co/400x400?text=Votre+Photo" style="width: 100%; height: 250px; object-fit: cover;">
                 <div class="p-3">
-                    <div class="d-flex justify-content-between">
-                        <h5 id="pTitle" class="fw-bold text-dark mb-1">Nom de l'article</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 id="pTitle" class="fw-bold mb-0">Titre</h5>
                         <span id="pPrice" class="text-orange fw-bold">0 $</span>
                     </div>
-                    <p id="pDesc" class="text-muted small">La description s'affichera ici au fur et à mesure...</p>
-                    <button class="btn btn-orange w-100 rounded-pill disabled" style="opacity: 0.7;">Contacter le vendeur</button>
+                    <p id="pDesc" class="text-muted small mt-2">La description apparaîtra ici...</p>
+                    <button class="btn btn-orange w-100 rounded-pill disabled" style="font-size: 0.8rem;">Commander sur WhatsApp</button>
                 </div>
             </div>
         </div>
@@ -66,12 +67,11 @@
 
 <script>
 const fileInput = document.getElementById('fileInput');
-const thumbContainer = document.getElementById('thumbContainer');
 const previewImg = document.getElementById('previewImg');
 
-// --- 1. COMPRESSION ET PRÉVISUALISATION ---
-const compress = (file) => {
-    return new Promise((res) => {
+// Fonction pour compresser la photo (évite l'erreur 500)
+const compressPhoto = (file) => {
+    return new Promise((resolve) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = (e) => {
@@ -79,77 +79,78 @@ const compress = (file) => {
             img.src = e.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX = 800;
+                const MAX_SIZE = 800;
                 let w = img.width, h = img.height;
-                if (w > MAX) { h *= MAX / w; w = MAX; }
+                if (w > MAX_SIZE) { h *= MAX_SIZE / w; w = MAX_SIZE; }
                 canvas.width = w; canvas.height = h;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, w, h);
-                res(canvas.toDataURL('image/jpeg', 0.6));
+                resolve(canvas.toDataURL('image/jpeg', 0.7)); // 70% de qualité
             };
         };
     });
 };
 
+// Afficher l'aperçu dès qu'on choisit la photo
 fileInput.addEventListener('change', async function() {
-    if (this.files.length > 2) {
-        alert("Limite de 2 photos atteinte.");
-        this.value = ""; return;
-    }
-    thumbContainer.innerHTML = "";
-    for (let i = 0; i < this.files.length; i++) {
-        const b64 = await compress(this.files[i]);
-        if (i === 0) previewImg.src = b64;
-        const img = document.createElement('img');
-        img.src = b64;
-        img.style = "width:60px; height:60px; object-fit:cover; border-radius:10px; border:2px solid #FF6B00";
-        thumbContainer.appendChild(img);
+    if (this.files[0]) {
+        const base64 = await compressPhoto(this.files[0]);
+        previewImg.src = base64;
     }
 });
 
-// --- 2. MISE À JOUR DU TEXTE ---
+// Syncroniser le texte en temps réel
 ['title', 'price', 'currency', 'description'].forEach(id => {
     document.getElementById(id).addEventListener('input', () => {
-        document.getElementById('pTitle').innerText = document.getElementById('title').value || "Nom de l'article";
+        document.getElementById('pTitle').innerText = document.getElementById('title').value || "Titre";
         document.getElementById('pPrice').innerText = `${document.getElementById('price').value || '0'} ${document.getElementById('currency').value}`;
         document.getElementById('pDesc').innerText = document.getElementById('description').value || "La description...";
     });
 });
 
-// --- 3. ENVOI DES DONNÉES ---
+// Envoi du formulaire
 document.getElementById('uploadForm').onsubmit = async (e) => {
     e.preventDefault();
-    document.getElementById('btnSubmit').disabled = true;
-    document.getElementById('loader').classList.remove('d-none');
+    const btn = document.getElementById('btnSubmit');
+    const loader = document.getElementById('loader');
 
-    const imgs = [];
-    for (const f of fileInput.files) { imgs.push(await compress(f)); }
+    btn.disabled = true;
+    loader.classList.remove('d-none');
 
-    const res = await fetch('/publier', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            title: document.getElementById('title').value,
-            price: document.getElementById('price').value,
-            currency: document.getElementById('currency').value,
-            description: document.getElementById('description').value,
-            images: imgs
-        })
-    });
+    try {
+        const photoBase64 = await compressPhoto(fileInput.files[0]);
 
-    if (res.ok) { window.location.href = "/"; }
-    else {
-        alert("Erreur de publication.");
-        document.getElementById('btnSubmit').disabled = false;
-        document.getElementById('loader').classList.add('d-none');
+        const response = await fetch('/publier', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                title: document.getElementById('title').value,
+                price: document.getElementById('price').value,
+                currency: document.getElementById('currency').value,
+                description: document.getElementById('description').value,
+                photo_url: photoBase64
+            })
+        });
+
+        if (response.ok) {
+            window.location.href = "/";
+        } else {
+            alert("Erreur Serveur. La photo est peut-être trop lourde.");
+            btn.disabled = false;
+            loader.classList.add('d-none');
+        }
+    } catch (err) {
+        alert("Problème de connexion.");
+        btn.disabled = false;
+        loader.classList.add('d-none');
     }
 };
 </script>
 
 <style>
     .border-orange { border: 1.5px solid #FF6B00 !important; }
-    .btn-orange { background-color: #FF6B00; color: #fff; border: none; transition: 0.3s; }
-    .btn-orange:hover { background-color: #e66000; color: #fff; transform: translateY(-2px); }
+    .btn-orange { background: #FF6B00; color: white; border: none; }
+    .btn-orange:hover { background: #e66000; color: white; }
     .text-orange { color: #FF6B00; }
 </style>
 {% endblock %}

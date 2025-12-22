@@ -51,6 +51,18 @@ def login_page():
     return render_template('login.html')
 
 
+@app.route('/profile')
+@app.route('/profile/<uid>')
+def profile(uid=None):
+    target_uid = uid if uid else session.get('user_id')
+    if not target_uid:
+        return redirect(url_for('login_page'))
+    user_doc = db.collection('users').document(target_uid).get()
+    if user_doc.exists:
+        return render_template('profile.html', user=user_doc.to_dict())
+    return "Utilisateur non trouvé 😕", 404
+
+
 @app.route('/set_session', methods=['POST'])
 def set_session():
     data = request.get_json()
@@ -128,16 +140,25 @@ def publier():
         return redirect(url_for('index'))
 
     if request.method == 'POST':
-        data = request.get_json()
-        db.collection('products').add({
-            'title': data.get('title'),
-            'price': data.get('price'),
-            'currency': data.get('currency'),
-            'description': data.get('description'),
-            'images': [data.get('photo_url')],  # Stocké en Base64
-            'created_at': datetime.datetime.now()
-        })
-        return jsonify({"status": "success"})
+        try:
+            data = request.get_json()
+
+            # Utilisation de photo_url comme tu l'as défini
+            photo_url = data.get('photo_url')
+
+            db.collection('products').add({
+                'title': data.get('title'),
+                'price': data.get('price'),
+                'currency': data.get('currency'),
+                'description': data.get('description'),
+                'images': [photo_url],  # On garde ta structure de liste
+                'created_at': datetime.datetime.now()
+            })
+            return jsonify({"status": "success"})
+        except Exception as e:
+            # Affiche l'erreur dans la console pour débugger
+            print(f"ERREUR LORS DE LA PUBLICATION : {e}")
+            return jsonify({"status": "error", "message": str(e)}), 500
 
     return render_template('publier.html')
 

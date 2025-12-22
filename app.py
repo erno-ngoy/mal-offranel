@@ -112,11 +112,15 @@ def save_subscription():
 @app.route('/profile/<uid>')
 @login_required
 def profile(uid=None):
-    target_uid = uid if uid else session.get('user_id')
+    # Sécurité : Si l'UID est 'None' ou vide à cause d'un ancien produit
+    target_uid = uid if uid and uid != 'None' else session.get('user_id')
+
     user_doc = db.collection('users').document(target_uid).get()
 
     if user_doc.exists:
         user_info = user_doc.to_dict()
+        user_info['id'] = user_doc.id
+
         # Récupération des produits de cet utilisateur spécifique
         products_ref = db.collection('products').where('author_id', '==', target_uid).order_by('created_at',
                                                                                                direction='DESCENDING').stream()
@@ -127,7 +131,9 @@ def profile(uid=None):
             user_products.append(p)
 
         return render_template('profile.html', user=user_info, products=user_products)
-    return "Utilisateur non trouvé 😕", 404
+
+    flash("Profil introuvable ou ID manquant.", "danger")
+    return redirect(url_for('index'))
 
 
 @app.route('/set_session', methods=['POST'])

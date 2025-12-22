@@ -1,87 +1,155 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6 glass-card p-5 bg-white shadow" style="border-radius: 25px; border: 2px solid #FF6B00;">
-        <h2 class="fw-bold text-center mb-4" style="color: #FF6B00;">📦 Nouvelle Publication</h2>
-
-        <form id="uploadForm">
-            <div class="mb-3">
-                <label class="fw-bold">Nom de l'article</label>
-                <input type="text" id="title" class="form-control rounded-pill border-orange" required>
-            </div>
-
-            <div class="row">
-                <div class="col-7 mb-3">
-                    <label class="fw-bold">Prix</label>
-                    <input type="number" id="price" class="form-control rounded-pill border-orange" required>
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="glass-card p-4 bg-white shadow" style="border-radius: 20px; border: 2px solid #FF6B00;">
+            <h3 class="fw-bold mb-4" style="color: #FF6B00;">📢 Créer une annonce</h3>
+            <form id="uploadForm">
+                <div class="mb-3">
+                    <label class="small fw-bold">Titre de l'article</label>
+                    <input type="text" id="title" class="form-control rounded-pill border-orange" placeholder="Ex: iPhone 13 Pro Max" required>
                 </div>
-                <div class="col-5 mb-3">
-                    <label class="fw-bold">Devise</label>
-                    <select id="currency" class="form-select rounded-pill border-orange">
-                        <option value="USD">$ USD</option>
-                        <option value="CDF">FC CDF</option>
-                    </select>
+
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        <label class="small fw-bold">Prix de vente</label>
+                        <input type="number" id="price" class="form-control rounded-pill border-orange" placeholder="0.00" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="small fw-bold">Devise</label>
+                        <select id="currency" class="form-select rounded-pill border-orange">
+                            <option value="$">USD ($)</option>
+                            <option value="FC">CDF (FC)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="small fw-bold">Photos (Max 1 photo)</label>
+                    <input type="file" id="fileInput" class="form-control rounded-pill" accept="image/*">
+                    <div id="thumbContainer" class="d-flex flex-wrap gap-2 mt-2"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="small fw-bold">Description du produit</label>
+                    <textarea id="description" class="form-control rounded-4 border-orange" rows="4" placeholder="État du produit, caractéristiques..."></textarea>
+                </div>
+
+                <button type="submit" id="btnSubmit" class="btn btn-orange w-100 py-3 rounded-pill fw-bold shadow">
+                    PUBLIER MAINTENANT 🚀
+                </button>
+            </form>
+            <div id="loader" class="text-center mt-3 d-none">
+                <div class="spinner-border text-orange"></div>
+                <p class="text-orange mt-2 fw-bold">Envoi vers le catalogue...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="sticky-top" style="top: 100px;">
+            <h5 class="text-center text-muted fw-bold mb-3">Aperçu de votre carte article</h5>
+            <div class="product-card shadow-lg mx-auto" style="max-width: 350px; border-radius: 20px; overflow: hidden; background: #fff;">
+                <img id="previewImg" src="https://placehold.co/400x400?text=Votre+Photo" style="width: 100%; height: 280px; object-fit: cover;">
+                <div class="p-3">
+                    <div class="d-flex justify-content-between">
+                        <h5 id="pTitle" class="fw-bold text-dark mb-1">Nom de l'article</h5>
+                        <span id="pPrice" class="text-orange fw-bold">0 $</span>
+                    </div>
+                    <p id="pDesc" class="text-muted small">La description s'affichera ici au fur et à mesure...</p>
+                    <button class="btn btn-orange w-100 rounded-pill disabled" style="opacity: 0.7;">Contacter le vendeur</button>
                 </div>
             </div>
-
-            <div class="mb-3">
-                <label class="fw-bold">Photo 📸</label>
-                <input type="file" id="fileInput" class="form-control rounded-pill" accept="image/*" required>
-            </div>
-
-            <div class="mb-3">
-                <label class="fw-bold">Description 📝</label>
-                <textarea id="description" class="form-control rounded-4 border-orange" rows="3"></textarea>
-            </div>
-
-            <button type="submit" id="btnSubmit" class="btn btn-orange w-100 py-3 shadow rounded-pill fw-bold">
-                Lancer la vente ! 🚀
-            </button>
-        </form>
-
-        <div id="loader" class="text-center mt-3 d-none">
-            <div class="spinner-border text-orange"></div>
-            <p>Traitement en cours...</p>
         </div>
     </div>
 </div>
 
 <script>
-document.getElementById('uploadForm').onsubmit = async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btnSubmit');
-    const loader = document.getElementById('loader');
-    const file = document.getElementById('fileInput').files[0];
+const fileInput = document.getElementById('fileInput');
+const thumbContainer = document.getElementById('thumbContainer');
+const previewImg = document.getElementById('previewImg');
 
-    btn.disabled = true;
-    loader.classList.remove('d-none');
-
-    const toBase64 = file => new Promise((resolve, reject) => {
+// --- 1. COMPRESSION ET PRÉVISUALISATION ---
+const compress = (file) => {
+    return new Promise((res) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX = 800;
+                let w = img.width, h = img.height;
+                if (w > MAX) { h *= MAX / w; w = MAX; }
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                res(canvas.toDataURL('image/jpeg', 0.6));
+            };
+        };
+    });
+};
+
+fileInput.addEventListener('change', async function() {
+    if (this.files.length > 2) {
+        alert("Limite de 2 photos atteinte.");
+        this.value = ""; return;
+    }
+    thumbContainer.innerHTML = "";
+    for (let i = 0; i < this.files.length; i++) {
+        const b64 = await compress(this.files[i]);
+        if (i === 0) previewImg.src = b64;
+        const img = document.createElement('img');
+        img.src = b64;
+        img.style = "width:60px; height:60px; object-fit:cover; border-radius:10px; border:2px solid #FF6B00";
+        thumbContainer.appendChild(img);
+    }
+});
+
+// --- 2. MISE À JOUR DU TEXTE ---
+['title', 'price', 'currency', 'description'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+        document.getElementById('pTitle').innerText = document.getElementById('title').value || "Nom de l'article";
+        document.getElementById('pPrice').innerText = `${document.getElementById('price').value || '0'} ${document.getElementById('currency').value}`;
+        document.getElementById('pDesc').innerText = document.getElementById('description').value || "La description...";
+    });
+});
+
+// --- 3. ENVOI DES DONNÉES ---
+document.getElementById('uploadForm').onsubmit = async (e) => {
+    e.preventDefault();
+    document.getElementById('btnSubmit').disabled = true;
+    document.getElementById('loader').classList.remove('d-none');
+
+    const imgs = [];
+    for (const f of fileInput.files) { imgs.push(await compress(f)); }
+
+    const res = await fetch('/publier', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            title: document.getElementById('title').value,
+            price: document.getElementById('price').value,
+            currency: document.getElementById('currency').value,
+            description: document.getElementById('description').value,
+            images: imgs
+        })
     });
 
-    try {
-        const imageText = await toBase64(file);
-        const response = await fetch('/publier', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                title: document.getElementById('title').value,
-                price: document.getElementById('price').value,
-                currency: document.getElementById('currency').value,
-                description: document.getElementById('description').value,
-                photo_url: imageText
-            })
-        });
-        if (response.ok) window.location.href = "/";
-    } catch (err) {
-        alert("Erreur de publication");
-        btn.disabled = false;
-        loader.classList.add('d-none');
+    if (res.ok) { window.location.href = "/"; }
+    else {
+        alert("Erreur de publication.");
+        document.getElementById('btnSubmit').disabled = false;
+        document.getElementById('loader').classList.add('d-none');
     }
 };
 </script>
+
+<style>
+    .border-orange { border: 1.5px solid #FF6B00 !important; }
+    .btn-orange { background-color: #FF6B00; color: #fff; border: none; transition: 0.3s; }
+    .btn-orange:hover { background-color: #e66000; color: #fff; transform: translateY(-2px); }
+    .text-orange { color: #FF6B00; }
+</style>
 {% endblock %}

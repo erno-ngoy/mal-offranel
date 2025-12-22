@@ -26,9 +26,10 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="fw-bold small">Photos (Sélectionnez plusieurs) 📸</label>
+                    <label class="fw-bold small">Photos (Maximum 2) 📸</label>
                     <input type="file" id="fileInput" class="form-control rounded-pill shadow-sm" accept="image/*" multiple required>
                     <div id="thumbContainer" class="d-flex flex-wrap gap-2 mt-2"></div>
+                    <small id="fileHelp" class="text-muted">Vous pouvez choisir jusqu'à 2 photos.</small>
                 </div>
 
                 <div class="mb-3">
@@ -43,15 +44,14 @@
 
             <div id="loader" class="text-center mt-3 d-none">
                 <div class="spinner-border text-orange"></div>
-                <p class="text-orange mt-2 fw-bold">Publication en cours... (Patientez)</p>
+                <p class="text-orange mt-2 fw-bold">Compression et envoi... Patientez.</p>
             </div>
         </div>
     </div>
 
     <div class="col-lg-6 d-flex align-items-start justify-content-center">
         <div class="sticky-lg-top" style="top: 100px; width: 100%; max-width: 350px;">
-            <h5 class="fw-bold text-muted text-center mb-3">Aperçu en temps réel ✨</h5>
-
+            <h5 class="fw-bold text-muted text-center mb-3">Aperçu du catalogue ✨</h5>
             <div class="product-card shadow-lg bg-white overflow-hidden" style="border-radius: 20px;">
                 <img id="previewImg" src="https://placehold.co/400x400?text=Offranel+Shop" alt="Aperçu" style="width: 100%; height: 250px; object-fit: cover;">
                 <div class="p-3">
@@ -60,7 +60,7 @@
                         <span id="previewPrice" class="text-orange fw-bold">0 $</span>
                     </div>
                     <p id="previewDesc" class="text-muted small mb-3">La description apparaîtra ici...</p>
-                    <button class="btn btn-orange w-100 rounded-pill disabled" style="opacity: 0.6;">Ajouter au panier</button>
+                    <button class="btn btn-orange w-100 rounded-pill disabled" style="opacity: 0.6;">Acheter via WhatsApp</button>
                 </div>
             </div>
         </div>
@@ -68,57 +68,68 @@
 </div>
 
 <script>
-// --- LOGIQUE DE PRÉVISUALISATION TEXTE ---
-const updateText = () => {
-    document.getElementById('previewTitle').innerText = document.getElementById('title').value || "Nom du produit";
-    document.getElementById('previewPrice').innerText = `${document.getElementById('price').value || '0'} ${document.getElementById('currency').value}`;
-    document.getElementById('previewDesc').innerText = document.getElementById('description').value || "La description apparaîtra ici...";
+const fileInput = document.getElementById('fileInput');
+const thumbContainer = document.getElementById('thumbContainer');
+const previewImg = document.getElementById('previewImg');
+
+// --- FONCTION DE COMPRESSION ---
+const compressImage = (file) => {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 700;
+                let width = img.width;
+                let height = img.height;
+                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                canvas.width = width; canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.6)); // Qualité 60%
+            };
+        };
+    });
 };
 
-['title', 'price', 'currency', 'description'].forEach(id => {
-    document.getElementById(id).addEventListener('input', updateText);
+// --- GESTION DE LA SÉLECTION (LIMITE À 2) ---
+fileInput.addEventListener('change', async function() {
+    if (this.files.length > 2) {
+        alert("Attention : Limite de 2 photos maximum par article.");
+        this.value = ""; // Réinitialise
+        thumbContainer.innerHTML = "";
+        return;
+    }
+
+    thumbContainer.innerHTML = "";
+    const files = Array.from(this.files);
+
+    for (const [index, file] of files.entries()) {
+        const compressed = await compressImage(file);
+        if (index === 0) previewImg.src = compressed;
+
+        const img = document.createElement('img');
+        img.src = compressed;
+        img.style = "width: 70px; height: 70px; object-fit: cover; border-radius: 10px; border: 2px solid #FF6B00;";
+        thumbContainer.appendChild(img);
+    }
 });
 
-// --- PRÉVISUALISATION ET MINIATURES ---
-document.getElementById('fileInput').addEventListener('change', function(e) {
-    const container = document.getElementById('thumbContainer');
-    const previewMain = document.getElementById('previewImg');
-    container.innerHTML = "";
-
-    const files = Array.from(e.target.files);
-    files.forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            if (index === 0) previewMain.src = event.target.result;
-            const img = document.createElement('img');
-            img.src = event.target.result;
-            img.style = "width: 60px; height: 60px; object-fit: cover; border-radius: 10px; border: 2px solid #FF6B00;";
-            container.appendChild(img);
-        }
-        reader.readAsDataURL(file);
-    });
-});
-
-// --- LOGIQUE D'ENVOI ---
+// --- ENVOI ---
 document.getElementById('uploadForm').onsubmit = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btnSubmit');
     const loader = document.getElementById('loader');
-    const files = document.getElementById('fileInput').files;
 
     btn.disabled = true;
     loader.classList.remove('d-none');
 
-    const toBase64 = file => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
-
     try {
-        // Conversion en liste Base64
-        const imageUrls = await Promise.all(Array.from(files).map(f => toBase64(f)));
+        const files = Array.from(fileInput.files);
+        const imagesBase64 = await Promise.all(files.map(f => compressImage(f)));
 
         const response = await fetch('/publier', {
             method: 'POST',
@@ -128,31 +139,38 @@ document.getElementById('uploadForm').onsubmit = async (e) => {
                 price: document.getElementById('price').value,
                 currency: document.getElementById('currency').value,
                 description: document.getElementById('description').value,
-                images: imageUrls // CORRECTION : On utilise 'images' pour correspondre à ton app.py
+                images: imagesBase64
             })
         });
 
         if (response.ok) {
             window.location.href = "/";
         } else {
-            alert("Erreur serveur (données trop lourdes ?)");
+            alert("Erreur Serveur. Essayez avec des images plus légères.");
             btn.disabled = false;
             loader.classList.add('d-none');
         }
     } catch (err) {
-        alert("Une erreur est survenue lors de l'envoi.");
+        alert("Erreur de réseau.");
         btn.disabled = false;
         loader.classList.add('d-none');
     }
 };
+
+// Mise à jour aperçu texte
+['title', 'price', 'currency', 'description'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+        document.getElementById('previewTitle').innerText = document.getElementById('title').value || "Produit";
+        document.getElementById('previewPrice').innerText = `${document.getElementById('price').value || '0'} ${document.getElementById('currency').value}`;
+        document.getElementById('previewDesc').innerText = document.getElementById('description').value || "La description...";
+    });
+});
 </script>
 
 <style>
     .border-orange { border: 1.5px solid #FF6B00 !important; }
-    .btn-orange { background-color: #FF6B00; color: white; border: none; transition: 0.3s; }
-    .btn-orange:hover { background-color: #e66000; color: white; transform: translateY(-2px); }
+    .btn-orange { background-color: #FF6B00; color: white; border: none; }
+    .btn-orange:hover { background-color: #e66000; color: white; }
     .text-orange { color: #FF6B00; }
-    #thumbContainer img { transition: transform 0.2s; cursor: pointer; }
-    #thumbContainer img:hover { transform: scale(1.1); }
 </style>
 {% endblock %}

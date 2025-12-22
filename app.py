@@ -2,23 +2,27 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 import firebase_admin
 from firebase_admin import credentials, firestore
 import datetime
+from datetime import timedelta
 import os
 import json
 
 app = Flask(__name__)
-app.secret_key = "offranel_orange_secret"
 
-# --- CONFIGURATION FIREBASE (RAILWAY + LOCAL) ---
+# --- CONFIGURATION SÉCURITÉ ET SESSION ---
+app.secret_key = "offranel_orange_secret"
+# Garde l'utilisateur connecté pendant 30 jours
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+
+# --- INITIALISATION FIREBASE (RAILWAY + LOCAL) ---
 if not firebase_admin._apps:
-    # On cherche la variable d'environnement sur Railway
     service_account_info = os.environ.get('FIREBASE_CONFIG')
 
     if service_account_info:
-        # Configuration pour le serveur en ligne
+        # En ligne sur Railway
         cred_dict = json.loads(service_account_info)
         cred = credentials.Certificate(cred_dict)
     else:
-        # Configuration pour ton PC (local)
+        # En local sur ton PC
         cred = credentials.Certificate("serviceAccountKey.json")
 
     firebase_admin.initialize_app(cred)
@@ -26,17 +30,22 @@ if not firebase_admin._apps:
 db = firestore.client()
 
 
-# --- ROUTES CLIENTS ---
+# --- ROUTES UTILISATEURS ---
 
 @app.route('/')
 def index():
-    # Récupération des produits triés par date (Correction : order_by)
-    products_stream = db.collection('products').order_by('created_at', direction='DESCENDING').stream()
-    products = []
-    for doc in products_stream:
-        p = doc.to_dict()
-        p['id'] = doc.id
-        products.append(p)
+    # Récupération des produits avec tri par date décroissante
+    try:
+        products_stream = db.collection('products').order_by('created_at', direction='DESCENDING').stream()
+        products = []
+        for doc in products_stream:
+            p = doc.to_dict()
+            p['id'] = doc.id
+            products.append(p)
+    except Exception as e:
+        print(f"Erreur Firestore : {e}")
+        products = []
+
     return render_template('index.html', products=products)
 
 
@@ -49,11 +58,15 @@ def login_page():
 def set_session():
     data = request.get_json()
     uid = data.get('uid')
+
+    # On rend la session persistante (30 jours)
+    session.permanent = True
+
     user_ref = db.collection('users').document(uid)
     user_doc = user_ref.get()
 
     if not user_doc.exists:
-        role = 'user'  # Rôle par défaut
+        role = 'user'
         user_ref.set({
             'name': data.get('name'),
             'email': data.get('email'),
@@ -90,24 +103,22 @@ def detail_produit(id):
     return "Produit non trouvé 😕", 404
 
 
-# --- ROUTES ADMINISTRATEUR (SÉCURISÉES) ---
+# --- ROUTES ADMIN ---
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
-    # Seul l'admin peut voir les stats
     if session.get('role') != 'admin':
-        flash("Accès refusé !", "danger")
+        flash("Accès réservé aux administrateurs", "danger")
         return redirect(url_for('index'))
 
-    # Calcul des statistiques
-    total_users = len(list(db.collection('users').stream()))
-    total_products = len(list(db.collection('products').stream()))
+    # Statistiques réelles
+    users_list = list(db.collection('users').stream())
+    products_list = list(db.collection('products').stream())
 
-    # On simule les utilisateurs actifs (ceux connectés ces dernières 24h)
     stats = {
-        "total_users": total_users,
-        "total_products": total_products,
-        "active_now": 1  # Vous pouvez affiner cela plus tard
+        "total_users": len(users_list),
+        "total_products": len(products_list),
+        "active_now": 1  # Simulation
     }
     return render_template('admin_dashboard.html', stats=stats)
 
@@ -124,7 +135,7 @@ def publier():
             'price': data.get('price'),
             'currency': data.get('currency'),
             'description': data.get('description'),
-            'images': [data.get('photo_url')],  # Base64
+            'images': [data.get('photo_url')],
             'created_at': datetime.datetime.now()
         })
         return jsonify({"status": "success"})
@@ -135,6 +146,7 @@ def publier():
 def supprimer(id):
     if session.get('role') == 'admin':
         db.collection('products').document(id).delete()
+        flash("Produit supprimé", "success")
     return redirect(url_for('index'))
 
 
@@ -146,6 +158,6 @@ def logout():
 
 # --- LANCEMENT ---
 if __name__ == '__main__':
-    # Indispensable pour Railway qui utilise le port 8080 par défaut
+    # Configuration du port pour Railway (8080)
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)

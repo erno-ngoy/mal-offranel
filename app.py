@@ -8,20 +8,16 @@ import json
 
 app = Flask(__name__)
 
-# --- CONFIGURATION SÉCURITÉ ET SESSION ---
+# --- CONFIGURATION SÉCURITÉ ---
 app.secret_key = "offranel_orange_secret"
-# Garde l'utilisateur connecté pendant 30 jours (indispensable pour mobile)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
-# --- INITIALISATION FIREBASE (RAILWAY + LOCAL) ---
+# --- INITIALISATION FIREBASE ---
 if not firebase_admin._apps:
     service_account_info = os.environ.get('FIREBASE_CONFIG')
     if service_account_info:
-        # Configuration Railway (Variable d'environnement)
-        cred_dict = json.loads(service_account_info)
-        cred = credentials.Certificate(cred_dict)
+        cred = credentials.Certificate(json.loads(service_account_info))
     else:
-        # Configuration Local (Fichier JSON)
         cred = credentials.Certificate("serviceAccountKey.json")
     firebase_admin.initialize_app(cred)
 
@@ -32,18 +28,26 @@ db = firestore.client()
 
 @app.route('/')
 def index():
-    try:
-        # Récupération des articles triés par date (les plus récents en premier)
-        products_stream = db.collection('products').order_by('created_at', direction='DESCENDING').stream()
-        products = []
-        for doc in products_stream:
-            p = doc.to_dict()
-            p['id'] = doc.id
-            products.append(p)
-    except Exception as e:
-        print(f"Erreur Firestore : {e}")
-        products = []
+    products_stream = db.collection('products').order_by('created_at', direction='DESCENDING').stream()
+    products = []
+    for doc in products_stream:
+        p = doc.to_dict()
+        p['id'] = doc.id
+        products.append(p)
     return render_template('index.html', products=products)
+
+
+@app.route('/profile')
+@app.route('/profile/<uid>')
+def profile(uid=None):
+    target_uid = uid if uid else session.get('user_id')
+    if not target_uid:
+        return redirect(url_for('login_page'))
+
+    user_doc = db.collection('users').document(target_uid).get()
+    if user_doc.exists:
+        return render_template('profile.html', user=user_doc.to_dict())
+    return "Utilisateur non trouvé 👤", 404
 
 
 @app.route('/login')
@@ -55,69 +59,41 @@ def login_page():
 def set_session():
     data = request.get_json()
     uid = data.get('uid')
-
-    # Activation de la session longue durée
     session.permanent = True
 
     user_ref = db.collection('users').document(uid)
     user_doc = user_ref.get()
 
-    # Déterminer le rôle (Admin ou User)
+    role = user_doc.to_dict().get('role', 'user') if user_doc.exists else 'user'
+
     if not user_doc.exists:
-        role = 'user'
         user_ref.set({
             'name': data.get('name'),
             'email': data.get('email'),
             'photo': data.get('photo'),
             'role': role,
-            'last_login': datetime.datetime.now()
+            'created_at': datetime.datetime.now()
         })
-    else:
-        role = user_doc.to_dict().get('role', 'user')
-        user_ref.update({'last_login': datetime.datetime.now()})
 
-    session.update({
-        'user_id': uid,
-        'name': data.get('name'),
-        'photo': data.get('photo'),
-        'role': role
-    })
+    session.update({'user_id': uid, 'name': data.get('name'), 'photo': data.get('photo'), 'role': role})
     return jsonify({"status": "ok", "role": role})
 
 
-@app.route('/produit/<id>')
-def detail_produit(id):
-    doc = db.collection('products').document(id).get()
-    if doc.exists:
-        return render_template('detail.html', product=doc.to_dict(), id=id)
-    return "Produit non trouvé 😕", 404
-
-
-@app.route('/panier')
-def panier():
-    return render_template('panier.html')
-
-
-@app.route('/a-propos')
-def a_propos():
-    return render_template('a_propos.html')
-
-
-# --- ROUTES ADMINISTRATEUR (SÉCURISÉES) ---
+# --- ROUTES ADMINISTRATION ---
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
     if session.get('role') != 'admin':
-        return redirect(url_for('index'))
+        return redirect('/')
 
-    # Statistiques pour le graphique et les cartes
-    users_count = len(list(db.collection('users').stream()))
-    products_count = len(list(db.collection('products').stream()))
+    # Calcul des statistiques
+    users_list = list(db.collection('users').stream())
+    products_list = list(db.collection('products').stream())
 
     stats = {
-        "total_users": users_count,
-        "total_products": products_count,
-        "active_now": 1  # Simulation d'activité
+        "total_users": len(users_list),
+        "total_products": len(products_list),
+        "active_now": 1
     }
     return render_template('admin_dashboard.html', stats=stats)
 
@@ -125,57 +101,29 @@ def admin_dashboard():
 @app.route('/publier', methods=['GET', 'POST'])
 def publier():
     if session.get('role') != 'admin':
-        return redirect(url_for('index'))
+        return redirect('/')
 
     if request.method == 'POST':
         data = request.get_json()
+        # On enregistre une LISTE de photos (photo_urls au pluriel)
         db.collection('products').add({
             'title': data.get('title'),
             'price': data.get('price'),
             'currency': data.get('currency'),
             'description': data.get('description'),
-            'images': [data.get('photo_url')],  # Stocké en Base64
+            'photo_urls': data.get('photo_urls'),  # Reçoit une liste de base64
             'created_at': datetime.datetime.now()
         })
         return jsonify({"status": "success"})
-
     return render_template('publier.html')
-
-
-@app.route('/api/publier_multiple', methods=['POST'])
-def api_publier_multiple():
-    if session.get('role') != 'admin':
-        return jsonify({"status": "error"}), 403
-
-    data = request.get_json()
-    produits = data.get('produits', [])
-    batch = db.batch()
-
-    for p in produits:
-        doc_ref = db.collection('products').document()
-        p['created_at'] = datetime.datetime.now()
-        batch.set(doc_ref, p)
-
-    batch.commit()
-    return jsonify({"status": "success"})
-
-
-@app.route('/supprimer/<id>', methods=['POST'])
-def supprimer(id):
-    if session.get('role') == 'admin':
-        db.collection('products').document(id).delete()
-        flash("Produit supprimé avec succès", "success")
-    return redirect(url_for('index'))
 
 
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('index'))
+    return redirect('/')
 
 
-# --- LANCEMENT SERVEUR ---
 if __name__ == '__main__':
-    # Indispensable pour Railway
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=port)

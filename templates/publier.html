@@ -26,8 +26,9 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="fw-bold small">Photo 📸</label>
-                    <input type="file" id="fileInput" class="form-control rounded-pill shadow-sm" accept="image/*" required>
+                    <label class="fw-bold small">Photos (Sélectionnez plusieurs) 📸</label>
+                    <input type="file" id="fileInput" class="form-control rounded-pill shadow-sm" accept="image/*" multiple required>
+                    <div id="thumbContainer" class="d-flex flex-wrap gap-2 mt-2"></div>
                 </div>
 
                 <div class="mb-3">
@@ -51,7 +52,7 @@
         <div class="sticky-lg-top" style="top: 100px; width: 100%; max-width: 350px;">
             <h5 class="fw-bold text-muted text-center mb-3">Aperçu en temps réel ✨</h5>
 
-            <div class="product-card shadow-lg animate__animated animate__pulse animate__infinite">
+            <div class="product-card shadow-lg">
                 <img id="previewImg" src="https://placehold.co/400x400?text=Offranel+Shop" alt="Aperçu">
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -67,7 +68,7 @@
 </div>
 
 <script>
-// --- LOGIQUE DE PRÉVISUALISATION ---
+// --- LOGIQUE DE PRÉVISUALISATION TEXTE ---
 const inputs = ['title', 'price', 'currency', 'description'];
 inputs.forEach(id => {
     document.getElementById(id).addEventListener('input', () => {
@@ -82,21 +83,40 @@ inputs.forEach(id => {
     });
 });
 
-// Prévisualisation de l'image
+// --- PRÉVISUALISATION MULTIPLE ---
 document.getElementById('fileInput').addEventListener('change', function(e) {
-    const reader = new FileReader();
-    reader.onload = function() {
-        document.getElementById('previewImg').src = reader.result;
-    }
-    reader.readAsDataURL(e.target.files[0]);
+    const container = document.getElementById('thumbContainer');
+    const previewMain = document.getElementById('previewImg');
+    container.innerHTML = ""; // Vider les anciennes miniatures
+
+    const files = Array.from(e.target.files);
+
+    files.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            // Afficher la première image comme image principale de l'aperçu
+            if (index === 0) previewMain.src = event.target.result;
+
+            // Créer la miniature
+            const img = document.createElement('img');
+            img.src = event.target.result;
+            img.style.width = "60px";
+            img.style.height = "60px";
+            img.style.objectFit = "cover";
+            img.style.borderRadius = "10px";
+            img.classList.add('border', 'border-orange');
+            container.appendChild(img);
+        }
+        reader.readAsDataURL(file);
+    });
 });
 
-// --- LOGIQUE D'ENVOI (EXISTANTE) ---
+// --- LOGIQUE D'ENVOI MULTIPLE ---
 document.getElementById('uploadForm').onsubmit = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('btnSubmit');
     const loader = document.getElementById('loader');
-    const file = document.getElementById('fileInput').files[0];
+    const files = document.getElementById('fileInput').files;
 
     btn.disabled = true;
     loader.classList.remove('d-none');
@@ -109,7 +129,9 @@ document.getElementById('uploadForm').onsubmit = async (e) => {
     });
 
     try {
-        const imageText = await toBase64(file);
+        // Convertir TOUTES les images en une liste Base64
+        const imageUrls = await Promise.all(Array.from(files).map(f => toBase64(f)));
+
         const response = await fetch('/publier', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -118,14 +140,15 @@ document.getElementById('uploadForm').onsubmit = async (e) => {
                 price: document.getElementById('price').value,
                 currency: document.getElementById('currency').value,
                 description: document.getElementById('description').value,
-                photo_url: imageText
+                photo_urls: imageUrls // On envoie maintenant une liste
             })
         });
+
         if (response.ok) {
             window.location.href = "/";
         }
     } catch (err) {
-        alert("Erreur réseau ou fichier trop lourd");
+        alert("Erreur lors de la publication. Vérifiez la taille des photos.");
         btn.disabled = false;
         loader.classList.add('d-none');
     }
@@ -136,16 +159,18 @@ document.getElementById('uploadForm').onsubmit = async (e) => {
     .border-orange { border: 1.5px solid #FF6B00 !important; }
     .border-orange:focus { box-shadow: 0 0 10px rgba(255, 107, 0, 0.2); border-color: #FF6B00; }
 
-    /* Animation pour la carte de prévisualisation */
-    .sticky-lg-top {
-        transition: all 0.3s ease;
-    }
-
     #previewImg {
         width: 100%;
         height: 250px;
         object-fit: cover;
         border-radius: 15px 15px 0 0;
+    }
+
+    #thumbContainer img {
+        transition: transform 0.2s;
+    }
+    #thumbContainer img:hover {
+        transform: scale(1.1);
     }
 </style>
 {% endblock %}

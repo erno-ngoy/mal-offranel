@@ -40,12 +40,19 @@
                 <p class="text-orange fw-bold mb-2">{{ product.price }} {{ product.currency }}</p>
 
                 <div class="d-grid gap-2">
-                    <button onclick="addToCart('{{ product.id }}', '{{ product.title }}', '{{ product.price }}', '{{ product.currency }}', '{{ product.images[0] if product.images else product.photo_url }}')"
-                            class="btn btn-orange btn-sm rounded-pill fw-bold">
-                        <i class="fas fa-cart-plus me-1"></i> Ajouter
-                    </button>
+                    {% if session.get('user_id') %}
+                        <button onclick="addToCart('{{ product.id }}', '{{ product.title }}', '{{ product.price }}', '{{ product.currency }}', '{{ product.images[0] if product.images else product.photo_url }}')"
+                                class="btn btn-orange btn-sm rounded-pill fw-bold">
+                            <i class="fas fa-cart-plus me-1"></i> Ajouter
+                        </button>
 
-                    <a href="{{ url_for('detail_produit', id=product.id) }}" class="btn btn-outline-orange btn-sm rounded-pill">Détails</a>
+                        <a href="{{ url_for('detail_produit', id=product.id) }}" class="btn btn-outline-orange btn-sm rounded-pill">Détails</a>
+                    {% else %}
+                        <a href="{{ url_for('login_page') }}" class="btn btn-orange btn-sm rounded-pill fw-bold">
+                            <i class="fas fa-lock me-1"></i> Connexion pour acheter
+                        </a>
+                        <small class="text-center text-muted" style="font-size: 0.65rem;">Connectez-vous pour voir les détails</small>
+                    {% endif %}
 
                     {% if session.get('role') == 'admin' %}
                     <form action="{{ url_for('supprimer', id=product.id) }}" method="POST" onsubmit="return confirm('Supprimer cet article ?');">
@@ -70,18 +77,15 @@
 function addToCart(id, title, price, currency, image) {
     let cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
 
-    // Vérifier si déjà dans le panier
     const exists = cart.find(item => item.id === id);
     if (exists) {
         alert("Cet article est déjà dans votre panier !");
         return;
     }
 
-    // Ajouter l'article
     cart.push({ id, title, price, currency, image });
     localStorage.setItem('offranel_cart', JSON.stringify(cart));
 
-    // Mettre à jour le badge dans base.html
     if (typeof updateCartBadge === "function") {
         updateCartBadge();
     }
@@ -116,7 +120,7 @@ function addToCart(id, title, price, currency, image) {
         color: #FF6B00;
     }
     .text-primary {
-        color: #1877F2 !important; /* Bleu Facebook */
+        color: #1877F2 !important;
     }
 </style>
 

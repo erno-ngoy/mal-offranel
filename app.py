@@ -5,6 +5,7 @@ import datetime
 from datetime import timedelta
 import os
 import json
+from functools import wraps
 
 app = Flask(__name__)
 
@@ -24,6 +25,15 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 
+# --- DÉCORATEUR POUR BLOQUER LES UTILISATEURS NON CONNECTÉS ---
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash("Veuillez vous connecter pour effectuer cette action 🔐", "warning")
+            return redirect(url_for('login_page'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # --- ROUTES UTILISATEURS ---
 
@@ -44,15 +54,17 @@ def index():
 
 @app.route('/login')
 def login_page():
+    # Si déjà connecté, on redirige vers l'accueil
+    if 'user_id' in session:
+        return redirect(url_for('index'))
     return render_template('login.html')
 
 
 @app.route('/profile')
 @app.route('/profile/<uid>')
+@login_required
 def profile(uid=None):
     target_uid = uid if uid else session.get('user_id')
-    if not target_uid:
-        return redirect(url_for('login_page'))
     user_doc = db.collection('users').document(target_uid).get()
     if user_doc.exists:
         return render_template('profile.html', user=user_doc.to_dict())
@@ -63,7 +75,6 @@ def profile(uid=None):
 def set_session():
     data = request.get_json()
     uid = data.get('uid')
-    # On récupère le nom envoyé par le client (Google Auth par exemple)
     user_name = data.get('name', 'Utilisateur')
 
     session.permanent = True
@@ -81,7 +92,6 @@ def set_session():
         })
     else:
         role = user_doc.to_dict().get('role', 'user')
-        # On garde le nom de la base de données s'il existe déjà
         user_name = user_doc.to_dict().get('name', user_name)
         user_ref.update({'last_login': datetime.datetime.now()})
 
@@ -95,6 +105,7 @@ def set_session():
 
 
 @app.route('/produit/<id>')
+@login_required
 def detail_produit(id):
     doc = db.collection('products').document(id).get()
     if doc.exists:
@@ -103,6 +114,7 @@ def detail_produit(id):
 
 
 @app.route('/panier')
+@login_required
 def panier():
     return render_template('panier.html')
 
@@ -122,9 +134,10 @@ def get_popup():
     return jsonify({"active": False})
 
 
-# --- ROUTES ADMINISTRATEUR ---
+# --- ROUTES ADMINISTRATEUR (Toutes protégées) ---
 
 @app.route('/admin/dashboard')
+@login_required
 def admin_dashboard():
     if session.get('role') != 'admin':
         return redirect(url_for('index'))
@@ -139,6 +152,7 @@ def admin_dashboard():
 
 
 @app.route('/admin/update_popup', methods=['POST'])
+@login_required
 def update_popup():
     if session.get('role') != 'admin':
         return jsonify({"status": "error"}), 403
@@ -153,6 +167,7 @@ def update_popup():
 
 
 @app.route('/admin/modifier-a-propos', methods=['GET', 'POST'])
+@login_required
 def edit_about():
     if session.get('role') != 'admin':
         return redirect(url_for('index'))
@@ -167,6 +182,7 @@ def edit_about():
 
 
 @app.route('/publier', methods=['GET', 'POST'])
+@login_required
 def publier():
     if session.get('role') != 'admin':
         return redirect(url_for('index'))
@@ -179,9 +195,9 @@ def publier():
                 'currency': data.get('currency'),
                 'description': data.get('description'),
                 'images': [data.get('photo_url')],
-                'author_name': session.get('name'),  # Nom de l'admin qui publie
+                'author_name': session.get('name'),
                 'author_photo': session.get('photo'),
-                'is_admin_post': True,  # Pour afficher le badge de certification
+                'is_admin_post': True,
                 'created_at': datetime.datetime.now()
             })
             return jsonify({"status": "success"})
@@ -192,6 +208,7 @@ def publier():
 
 
 @app.route('/supprimer/<id>', methods=['POST'])
+@login_required
 def supprimer(id):
     if session.get('role') == 'admin':
         db.collection('products').document(id).delete()

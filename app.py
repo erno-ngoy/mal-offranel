@@ -10,21 +10,19 @@ app = Flask(__name__)
 
 # --- CONFIGURATION SÉCURITÉ ET SESSION ---
 app.secret_key = "offranel_orange_secret"
-# Garde l'utilisateur connecté pendant 30 jours
+# Garde l'utilisateur connecté pendant 30 jours (indispensable pour mobile)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 # --- INITIALISATION FIREBASE (RAILWAY + LOCAL) ---
 if not firebase_admin._apps:
     service_account_info = os.environ.get('FIREBASE_CONFIG')
-
     if service_account_info:
-        # En ligne sur Railway
+        # Configuration Railway (Variable d'environnement)
         cred_dict = json.loads(service_account_info)
         cred = credentials.Certificate(cred_dict)
     else:
-        # En local sur ton PC
+        # Configuration Local (Fichier JSON)
         cred = credentials.Certificate("serviceAccountKey.json")
-
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
@@ -34,8 +32,8 @@ db = firestore.client()
 
 @app.route('/')
 def index():
-    # Récupération des produits avec tri par date décroissante
     try:
+        # Récupération des articles triés par date (les plus récents en premier)
         products_stream = db.collection('products').order_by('created_at', direction='DESCENDING').stream()
         products = []
         for doc in products_stream:
@@ -45,7 +43,6 @@ def index():
     except Exception as e:
         print(f"Erreur Firestore : {e}")
         products = []
-
     return render_template('index.html', products=products)
 
 
@@ -59,12 +56,13 @@ def set_session():
     data = request.get_json()
     uid = data.get('uid')
 
-    # On rend la session persistante (30 jours)
+    # Activation de la session longue durée
     session.permanent = True
 
     user_ref = db.collection('users').document(uid)
     user_doc = user_ref.get()
 
+    # Déterminer le rôle (Admin ou User)
     if not user_doc.exists:
         role = 'user'
         user_ref.set({
@@ -87,14 +85,6 @@ def set_session():
     return jsonify({"status": "ok", "role": role})
 
 
-@app.route('/profile')
-@app.route('/profile/<uid>')
-def profile(uid=None):
-    if 'user_id' not in session:
-        return redirect(url_for('login_page'))
-    return render_template('profile.html')
-
-
 @app.route('/produit/<id>')
 def detail_produit(id):
     doc = db.collection('products').document(id).get()
@@ -103,22 +93,31 @@ def detail_produit(id):
     return "Produit non trouvé 😕", 404
 
 
-# --- ROUTES ADMIN ---
+@app.route('/panier')
+def panier():
+    return render_template('panier.html')
+
+
+@app.route('/a-propos')
+def a_propos():
+    return render_template('a_propos.html')
+
+
+# --- ROUTES ADMINISTRATEUR (SÉCURISÉES) ---
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
     if session.get('role') != 'admin':
-        flash("Accès réservé aux administrateurs", "danger")
         return redirect(url_for('index'))
 
-    # Statistiques réelles
-    users_list = list(db.collection('users').stream())
-    products_list = list(db.collection('products').stream())
+    # Statistiques pour le graphique et les cartes
+    users_count = len(list(db.collection('users').stream()))
+    products_count = len(list(db.collection('products').stream()))
 
     stats = {
-        "total_users": len(users_list),
-        "total_products": len(products_list),
-        "active_now": 1  # Simulation
+        "total_users": users_count,
+        "total_products": products_count,
+        "active_now": 1  # Simulation d'activité
     }
     return render_template('admin_dashboard.html', stats=stats)
 
@@ -135,18 +134,37 @@ def publier():
             'price': data.get('price'),
             'currency': data.get('currency'),
             'description': data.get('description'),
-            'images': [data.get('photo_url')],
+            'images': [data.get('photo_url')],  # Stocké en Base64
             'created_at': datetime.datetime.now()
         })
         return jsonify({"status": "success"})
+
     return render_template('publier.html')
+
+
+@app.route('/api/publier_multiple', methods=['POST'])
+def api_publier_multiple():
+    if session.get('role') != 'admin':
+        return jsonify({"status": "error"}), 403
+
+    data = request.get_json()
+    produits = data.get('produits', [])
+    batch = db.batch()
+
+    for p in produits:
+        doc_ref = db.collection('products').document()
+        p['created_at'] = datetime.datetime.now()
+        batch.set(doc_ref, p)
+
+    batch.commit()
+    return jsonify({"status": "success"})
 
 
 @app.route('/supprimer/<id>', methods=['POST'])
 def supprimer(id):
     if session.get('role') == 'admin':
         db.collection('products').document(id).delete()
-        flash("Produit supprimé", "success")
+        flash("Produit supprimé avec succès", "success")
     return redirect(url_for('index'))
 
 
@@ -156,8 +174,8 @@ def logout():
     return redirect(url_for('index'))
 
 
-# --- LANCEMENT ---
+# --- LANCEMENT SERVEUR ---
 if __name__ == '__main__':
-    # Configuration du port pour Railway (8080)
+    # Indispensable pour Railway
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)

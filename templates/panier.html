@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container animate__animated animate__fadeInUp">
+    <h2 class="fw-bold mb-4 text-orange">Mon Panier 🛒</h2>
+    <div id="panier-items"></div>
+    
+    <div id="cart-footer" class="glass-card p-4 mt-4 shadow-sm" style="display: none;">
+        <div class="d-flex justify-content-between mb-3">
+            <span class="h5">Total Estimé :</span>
+            <span class="h5 fw-bold text-orange" id="cart-total">0 $</span>
+        </div>
+        <button onclick="envoyerWhatsApp()" class="btn btn-success w-100 rounded-pill py-3 fw-bold">
+            <i class="fab fa-whatsapp me-2"></i> Commander sur WhatsApp
+        </button>
+    </div>
+</div>
+
+<script>
+    function loadCart() {
+        let cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
+        let container = document.getElementById('panier-items');
+        let total = 0;
+        
+        if (cart.length === 0) {
+            container.innerHTML = '<div class="text-center py-5"><h5>Votre panier est vide 🍊</h5><a href="/" class="btn btn-orange mt-3">Voir les produits</a></div>';
+            document.getElementById('cart-footer').style.display = 'none';
+            return;
+        }
+
+        document.getElementById('cart-footer').style.display = 'block';
+        container.innerHTML = cart.map((item, index) => {
+            total += parseFloat(item.price);
+            return `
+                <div class="glass-card p-3 mb-2 d-flex align-items-center animate__animated animate__fadeInLeft">
+                    <img src="${item.image}" class="rounded" width="70" height="70" style="object-fit:cover;">
+                    <div class="ms-3 flex-grow-1">
+                        <h6 class="fw-bold mb-0">${item.title}</h6>
+                        <small class="text-orange">${item.price} ${item.currency}</small>
+                    </div>
+                    <button onclick="removeItem(${index})" class="btn btn-link text-danger"><i class="fas fa-trash"></i></button>
+                </div>`;
+        }).join('');
+        document.getElementById('cart-total').innerText = total + " $";
+    }
+
+    function removeItem(index) {
+        let cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
+        cart.splice(index, 1);
+        localStorage.setItem('offranel_cart', JSON.stringify(cart));
+        loadCart();
+    }
+
+    function envoyerWhatsApp() {
+        let cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
+        let num = "243XXXXXXXXX"; // Ton numéro ici
+        let msg = "Bonjour Offranel 🍊, je souhaite commander :\n\n";
+        cart.forEach(i => msg += `• ${i.title} (${i.price} ${i.currency})\n`);
+        msg += `\n*TOTAL : ${document.getElementById('cart-total').innerText}*`;
+        window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`);
+    }
+
+    document.addEventListener('DOMContentLoaded', loadCart);
+</script>
+{% endblock %}

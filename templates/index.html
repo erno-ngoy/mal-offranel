@@ -41,7 +41,7 @@
             {% endif %}
 
             <div class="p-2 d-flex align-items-center bg-white border-bottom">
-                <a href="/profile/{{ product.author_id }}" class="text-decoration-none d-flex align-items-center">
+                <a href="/profile/{{ product.author_id if product.author_id else '' }}" class="text-decoration-none d-flex align-items-center">
                     <img src="{{ product.author_photo if product.author_photo else 'https://ui-avatars.com/api/?name=' ~ product.author_name ~ '&background=FF6B00&color=fff' }}"
                          class="rounded-circle me-2" width="25" height="25" style="object-fit: cover;">
                     <div class="d-flex align-items-center">

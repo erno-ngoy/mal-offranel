@@ -6,12 +6,20 @@ from datetime import timedelta
 import os
 import json
 from functools import wraps
+# AJOUT : Import pour les alertes physiques (nécessite : pip install pywebpush)
+from pywebpush import webpush, WebPushException
 
 app = Flask(__name__)
 
 # --- CONFIGURATION SÉCURITÉ ET SESSION ---
 app.secret_key = "offranel_orange_secret"
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+
+# --- CONFIGURATION NOTIFICATIONS PUSH (VAPID) ---
+VAPID_PUBLIC_KEY = "BOT0JEWz9-w_eTSqZXlLXewXXq4hT3zvWPFfyb68z-aH80OVc1oX2xvftH4d3rhQMKT5ibT8vkHK7vAIbaTq29Q"
+# IMPORTANT : Remplacez par votre clé privée secrète (générée avec pywebpush ou console Firebase)
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "VOTRE_CLE_PRIVEE_SECRET")
+VAPID_CLAIMS = {"sub": "mailto:admin@offranel.com"}
 
 # --- INITIALISATION FIREBASE ---
 if not firebase_admin._apps:
@@ -37,12 +45,35 @@ def login_required(f):
 
     return decorated_function
 
+# --- FONCTION D'ENVOI D'ALERTES PUSH ---
+def trigger_push_notifications(title, body):
+    """Envoie une alerte qui fait vibrer le smartphone de tous les abonnés"""
+    try:
+        subscriptions = db.collection('push_subscriptions').stream()
+        for sub in subscriptions:
+            try:
+                sub_data = sub.to_dict()
+                webpush(
+                    subscription_info=sub_data,
+                    data=json.dumps({
+                        "title": title,
+                        "body": body,
+                        "icon": "/static/img/image.png"
+                    }),
+                    vapid_private_key=VAPID_PRIVATE_KEY,
+                    vapid_claims=VAPID_CLAIMS
+                )
+            except WebPushException as ex:
+                # Si le token est expiré ou invalide, on nettoie la base
+                if ex.response and ex.response.status_code in [404, 410]:
+                    db.collection('push_subscriptions').document(sub.id).delete()
+    except Exception as e:
+        print(f"Erreur globale Push: {e}")
 
 # --- ROUTES UTILISATEURS ---
 
 @app.route('/')
 def index():
-    # Récupération des paramètres de recherche et filtrage
     search_query = request.args.get('search', '').lower()
     category_filter = request.args.get('category', '')
 
@@ -52,8 +83,6 @@ def index():
         for doc in products_stream:
             p = doc.to_dict()
             p['id'] = doc.id
-
-            # Application des filtres côté serveur (Python)
             match_search = search_query in p.get('title', '').lower() if search_query else True
             match_cat = p.get('category') == category_filter if category_filter else True
 
@@ -70,6 +99,17 @@ def login_page():
     if 'user_id' in session:
         return redirect(url_for('index'))
     return render_template('login.html')
+
+# --- AJOUT : ROUTE POUR ENREGISTRER L'ABONNEMENT DU MOBILE ---
+@app.route('/api/save-subscription', methods=['POST'])
+def save_subscription():
+    data = request.get_json()
+    if data:
+        # On identifie l'abonnement par l'UID ou un hash de l'endpoint
+        sub_id = session.get('user_id', f"guest_{datetime.datetime.now().timestamp()}")
+        db.collection('push_subscriptions').document(str(sub_id)).set(data)
+        return jsonify({"status": "success"})
+    return jsonify({"status": "error"}), 400
 
 
 @app.route('/profile')
@@ -141,7 +181,6 @@ def get_popup():
     return jsonify({"active": False})
 
 
-# --- AJOUT : API NOTIFICATIONS POUR LA CLOCHE ---
 @app.route('/api/get_last_notif')
 def get_last_notif():
     """Récupère la dernière action pour notifier les utilisateurs"""
@@ -168,7 +207,6 @@ def admin_dashboard():
     return render_template('admin_dashboard.html', stats=stats, popup=popup_data)
 
 
-# Toggle Stock (Marquer comme Vendu/Disponible)
 @app.route('/admin/toggle_stock/<id>', methods=['POST'])
 @login_required
 def toggle_stock(id):
@@ -237,13 +275,19 @@ def publier():
                 'created_at': datetime.datetime.now()
             })
 
-            # CRÉATION D'UNE NOTIFICATION POUR TOUS LES UTILISATEURS
+            # 1. NOTIFICATION DANS L'APPLI (Cloche)
             db.collection('notifications').add({
                 'id': str(datetime.datetime.now().timestamp()),
                 'title': "Nouvel arrivage ! 🍊",
                 'message': f"{data.get('title')} est maintenant disponible.",
                 'timestamp': datetime.datetime.now()
             })
+
+            # 2. ALERTE PHYSIQUE (Fait vibrer le téléphone)
+            trigger_push_notifications(
+                "OFFRANEL : Nouveau produit ! 🍊",
+                f"Découvrez : {data.get('title')}"
+            )
 
             return jsonify({"status": "success"})
         except Exception as e:

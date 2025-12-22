@@ -278,9 +278,9 @@
         <div class="glass-cookie d-flex flex-column flex-md-row align-items-center justify-content-between text-center">
             <div>
                 <h5 class="fw-bold text-orange mb-1">Restez connecté ! 🍊</h5>
-                <p class="small mb-0 text-muted">Nous utilisons des cookies pour optimiser votre expérience.</p>
+                <p class="small mb-0 text-muted">Autorisez les notifications pour ne rater aucun arrivage.</p>
             </div>
-            <button onclick="acceptCookies()" class="btn btn-orange px-5 shadow-sm mt-2 mt-md-0">Accepter</button>
+            <button onclick="acceptCookies()" class="btn btn-orange px-5 shadow-sm mt-2 mt-md-0">Activer</button>
         </div>
     </div>
 </div>
@@ -334,6 +334,39 @@
         }
     });
 
+    // --- AJOUT : LOGIQUE DES ALERTES TÉLÉPHONE ---
+    const VAPID_PUBLIC_KEY = 'BOT0JEWz9-w_eTSqZXlLXewXXq4hT3zvWPFfyb68z-aH80OVc1oX2xvftH4d3rhQMKT5ibT8vkHK7vAIbaTq29Q';
+
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+    }
+
+    async function subscribeToPush() {
+        if ('serviceWorker' in navigator) {
+            const registration = await navigator.serviceWorker.ready;
+
+            try {
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                });
+
+                // Envoyer l'abonnement au serveur Flask
+                await fetch('/api/save-subscription', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(subscription)
+                });
+                console.log("Smartphone enregistré pour les alertes !");
+            } catch (err) {
+                console.error("Erreur d'abonnement push:", err);
+            }
+        }
+    }
+
     // SERVICE WORKER REGISTRATION
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').catch(err => console.log(err));
@@ -342,7 +375,7 @@
     // NOTIFICATIONS SYSTEM (Simulation après action)
     async function checkNotifications() {
         try {
-            const response = await fetch('/api/get_last_notif'); // Crée cette route côté Python
+            const response = await fetch('/api/get_last_notif');
             const data = await response.json();
             const lastId = localStorage.getItem('offranel_last_notif');
 
@@ -353,17 +386,24 @@
             }
         } catch(e) {}
     }
-    setInterval(checkNotifications, 60000); // Check chaque minute
+    setInterval(checkNotifications, 60000);
 
     // GESTION PANIER
     function updateCartBadge() {
         const cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
-        document.getElementById('cart-count').innerText = cart.length;
+        const countElement = document.getElementById('cart-count');
+        if(countElement) countElement.innerText = cart.length;
     }
 
     function acceptCookies() {
         localStorage.setItem("offranel_cookies_accepted", "true");
         document.getElementById("cookieBanner").style.display = "none";
+        // On demande la permission pour les alertes réelles
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                subscribeToPush();
+            }
+        });
     }
 
     document.addEventListener("DOMContentLoaded", () => {

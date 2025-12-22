@@ -141,6 +141,16 @@ def get_popup():
     return jsonify({"active": False})
 
 
+# --- AJOUT : API NOTIFICATIONS POUR LA CLOCHE ---
+@app.route('/api/get_last_notif')
+def get_last_notif():
+    """Récupère la dernière action pour notifier les utilisateurs"""
+    notif_ref = db.collection('notifications').order_by('timestamp', direction='DESCENDING').limit(1).get()
+    if notif_ref:
+        return jsonify(notif_ref[0].to_dict())
+    return jsonify({"id": None})
+
+
 # --- ROUTES ADMINISTRATEUR ---
 
 @app.route('/admin/dashboard')
@@ -212,19 +222,29 @@ def publier():
     if request.method == 'POST':
         try:
             data = request.get_json()
-            db.collection('products').add({
+            # Ajout du produit
+            new_product_ref = db.collection('products').add({
                 'title': data.get('title'),
                 'price': data.get('price'),
                 'currency': data.get('currency'),
-                'category': data.get('category'),  # Ajout catégorie
+                'category': data.get('category'),
                 'description': data.get('description'),
-                'images': data.get('images'),  # Liste de photos (Multi-images)
-                'in_stock': True,  # Par défaut disponible
+                'images': data.get('images'),
+                'in_stock': True,
                 'author_name': session.get('name'),
                 'author_photo': session.get('photo'),
                 'is_admin_post': True,
                 'created_at': datetime.datetime.now()
             })
+
+            # CRÉATION D'UNE NOTIFICATION POUR TOUS LES UTILISATEURS
+            db.collection('notifications').add({
+                'id': str(datetime.datetime.now().timestamp()),
+                'title': "Nouvel arrivage ! 🍊",
+                'message': f"{data.get('title')} est maintenant disponible.",
+                'timestamp': datetime.datetime.now()
+            })
+
             return jsonify({"status": "success"})
         except Exception as e:
             print(f"ERREUR PUBLICATION : {e}")

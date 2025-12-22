@@ -4,7 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-    <title>OFFRANEL  | Malaki</title>
+    <title>OFFRANEL | Malaki</title>
+
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#FF6B00">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="OFFRANEL">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -105,8 +111,8 @@
         }
         .btn-orange:hover { background-color: #e66000; color: white; transform: translateY(-2px); }
 
-        /* --- PANIER BADGE --- */
-        .cart-badge {
+        /* --- PANIER & NOTIF BADGE --- */
+        .cart-badge, .notif-badge {
             font-size: 0.65rem;
             padding: 4px 6px;
             border: 2px solid white;
@@ -149,7 +155,6 @@
             box-shadow: 0 15px 35px rgba(0,0,0,0.1);
         }
 
-        /* --- RESPONSIVE ADJUSTMENTS --- */
         @media (max-width: 576px) {
             .navbar-brand { font-size: 1.2rem; }
             .container { padding-left: 20px; padding-right: 20px; }
@@ -157,13 +162,14 @@
     </style>
 </head>
 <body>
+
 <div id="pwa-install-banner" class="bg-dark text-white p-3 shadow-lg animate__animated animate__fadeInDown" style="display: none; position: fixed; top: 0; width: 100%; z-index: 100000; border-bottom: 3px solid var(--offranel-orange);">
     <div class="container d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center">
-            <img src="/static/img/icon-192.png" width="40" class="rounded-3 me-3">
+            <img src="/static/img/image.png" width="40" class="rounded-3 me-3">
             <div>
                 <p class="mb-0 fw-bold small">Installer OFFRANEL</p>
-                <p class="mb-0 tiny text-muted" style="font-size: 0.7rem;">Accès rapide depuis votre écran d'accueil</p>
+                <p class="mb-0 tiny text-muted" style="font-size: 0.7rem;">Accès rapide sur votre écran</p>
             </div>
         </div>
         <div class="d-flex gap-2">
@@ -173,226 +179,198 @@
     </div>
 </div>
 
-    <div id="fb-loader-wrapper">
-        <div class="loader-brand-icon">
-            <i class="fas fa-shopping-bag"></i>
-        </div>
-        <div class="fb-lite-spinner"></div>
-        <div class="from-malaki-container">
-            <span class="from-text">from</span>
-            <span class="malaki-text">MALAKI</span>
-        </div>
+<div id="fb-loader-wrapper">
+    <div class="loader-brand-icon">
+        <i class="fas fa-shopping-bag"></i>
     </div>
+    <div class="fb-lite-spinner"></div>
+    <div class="from-malaki-container">
+        <span class="from-text">from</span>
+        <span class="malaki-text">MALAKI</span>
+    </div>
+</div>
 
-    <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold text-orange" href="/">
-                <i class="fas fa-shopping-bag me-2"></i>OFFRANEL
+<nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-orange" href="/">
+            <i class="fas fa-shopping-bag me-2"></i>OFFRANEL
+        </a>
+
+        <div class="d-flex align-items-center order-lg-3">
+            <a href="#" class="nav-link position-relative me-3" id="notif-link">
+                <i class="fas fa-bell fa-lg"></i>
+                <span id="notif-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notif-badge d-none">
+                    0
+                </span>
             </a>
 
-            <div class="d-flex align-items-center order-lg-3">
-                <a href="/panier" class="nav-link position-relative me-3">
-                    <i class="fas fa-shopping-cart fa-lg"></i>
-                    <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger cart-badge">
-                        0
-                    </span>
-                </a>
+            <a href="/panier" class="nav-link position-relative me-3">
+                <i class="fas fa-shopping-cart fa-lg"></i>
+                <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger cart-badge">
+                    0
+                </span>
+            </a>
 
-                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-            </div>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
 
-            <div class="collapse navbar-collapse" id="navMenu">
-                <form action="/" method="GET" class="d-flex mx-auto my-3 my-lg-0 search-container w-100 px-lg-4">
-                    <div class="input-group">
-                        <input type="text" name="search" class="form-control search-input" placeholder="Rechercher un article..." value="{{ request.args.get('search', '') }}">
-                        <button class="btn search-btn" type="submit"><i class="fas fa-search"></i></button>
-                    </div>
-                </form>
+        <div class="collapse navbar-collapse" id="navMenu">
+            <form action="/" method="GET" class="d-flex mx-auto my-3 my-lg-0 search-container w-100 px-lg-4">
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control search-input" placeholder="Rechercher..." value="{{ request.args.get('search', '') }}">
+                    <button class="btn search-btn" type="submit"><i class="fas fa-search"></i></button>
+                </div>
+            </form>
 
-                <div class="navbar-nav ms-auto align-items-center pt-3 pt-lg-0">
-                    <a class="nav-link fw-semibold" href="/"><i class="fas fa-home me-1"></i> Accueil</a>
-                    <a class="nav-link fw-semibold" href="/a-propos">A propos ?</a>
+            <div class="navbar-nav ms-auto align-items-center pt-3 pt-lg-0">
+                <a class="nav-link fw-semibold" href="/"><i class="fas fa-home me-1"></i> Accueil</a>
+                <a class="nav-link fw-semibold" href="/a-propos">À propos</a>
 
-                    {% if session.get('user_id') %}
-                        {% if session.get('role') == 'admin' %}
-                            <a class="btn btn-orange btn-sm mx-lg-2 my-2 my-lg-0" href="/publier">
-                                <i class="fas fa-plus-circle me-1"></i> Publier
-                            </a>
-                        {% endif %}
-
-                        <div class="dropdown mt-2 mt-lg-0">
-                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" data-bs-toggle="dropdown">
-                                <span class="me-2 fw-bold d-none d-lg-inline">{{ session.get('name') }}</span>
-                                <img src="{{ session.get('photo') }}" class="rounded-circle border border-warning shadow-sm" width="38" height="38">
-                                <span class="d-lg-none ms-2">{{ session.get('name') }}</span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 p-2 animate__animated animate__fadeIn">
-                                {% if session.get('role') == 'admin' %}
-                                    <li><a class="dropdown-item fw-bold text-orange" href="/admin/dashboard">
-                                        <i class="fas fa-chart-line me-2"></i>Dashboard Admin
-                                    </a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                {% endif %}
-
-                                <li><a class="dropdown-item" href="/profile/{{ session.get('user_id') }}">
-                                    <i class="fas fa-user-circle me-2"></i>Mon Profil
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="/logout">
-                                    <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
-                                </a></li>
-                            </ul>
-                        </div>
-                    {% else %}
-                        <a class="btn btn-orange px-4 w-100 w-lg-auto mt-3 mt-lg-0 shadow-sm" href="/login">Connexion ⚡</a>
+                {% if session.get('user_id') %}
+                    {% if session.get('role') == 'admin' %}
+                        <a class="btn btn-orange btn-sm mx-lg-2 my-2 my-lg-0" href="/publier">
+                            <i class="fas fa-plus-circle me-1"></i> Publier
+                        </a>
                     {% endif %}
-                </div>
-            </div>
-        </div>
-    </nav>
 
-    <div class="container mt-3">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show rounded-pill px-4 shadow-sm border-0 animate__animated animate__headShake" role="alert">
-                <i class="fas {{ 'fa-check-circle' if category == 'success' else 'fa-exclamation-circle' }} me-2"></i>
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-              </div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-    </div>
-
-    <div class="container mt-3 mt-lg-4 mb-5">
-        {% block content %}{% endblock %}
-    </div>
-
-    <div id="cookieBanner" class="cookie-banner animate__animated animate__fadeInUp">
-        <div class="container">
-            <div class="glass-cookie d-flex flex-column flex-md-row align-items-center justify-content-between text-center text-md-start">
-                <div class="mb-3 mb-md-0">
-                    <h5 class="fw-bold text-orange mb-1">Restez connecté ! 🍊</h5>
-                    <p class="small mb-0 text-muted">
-                        Nous utilisons des cookies pour maintenir votre session active pendant 30 jours et optimiser votre expérience.
-                    </p>
-                </div>
-                <div>
-                    <button onclick="acceptCookies()" class="btn btn-orange px-5 shadow-sm">Accepter</button>
-                </div>
+                    <div class="dropdown mt-2 mt-lg-0">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" data-bs-toggle="dropdown">
+                            <img src="{{ session.get('photo') }}" class="rounded-circle border border-warning shadow-sm" width="38" height="38">
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 p-2 animate__animated animate__fadeIn">
+                            {% if session.get('role') == 'admin' %}
+                                <li><a class="dropdown-item fw-bold text-orange" href="/admin/dashboard"><i class="fas fa-chart-line me-2"></i>Dashboard</a></li>
+                            {% endif %}
+                            <li><a class="dropdown-item" href="/profile/{{ session.get('user_id') }}"><i class="fas fa-user-circle me-2"></i>Mon Profil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="/logout"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <a class="btn btn-orange px-4 w-100 w-lg-auto mt-3 mt-lg-0 shadow-sm" href="/login">Connexion ⚡</a>
+                {% endif %}
             </div>
         </div>
     </div>
+</nav>
 
-    <div class="modal fade" id="autoPopup" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius: 20px; border: none;">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold text-orange" id="pTitle"></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body py-4 text-center">
-                    <p id="pContent" class="fs-5 text-muted"></p>
-                </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-orange w-100 rounded-pill py-2 fw-bold" data-bs-dismiss="modal">OK, FERMER</button>
-                </div>
+<div class="container mt-3">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show rounded-pill px-4 shadow-sm border-0 animate__animated animate__headShake" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+</div>
+
+<div class="container mt-3 mt-lg-4 mb-5">
+    {% block content %}{% endblock %}
+</div>
+
+<div id="cookieBanner" class="cookie-banner animate__animated animate__fadeInUp">
+    <div class="container">
+        <div class="glass-cookie d-flex flex-column flex-md-row align-items-center justify-content-between text-center">
+            <div>
+                <h5 class="fw-bold text-orange mb-1">Restez connecté ! 🍊</h5>
+                <p class="small mb-0 text-muted">Nous utilisons des cookies pour optimiser votre expérience.</p>
+            </div>
+            <button onclick="acceptCookies()" class="btn btn-orange px-5 shadow-sm mt-2 mt-md-0">Accepter</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="autoPopup" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px; border: none;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold text-orange" id="pTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-4 text-center">
+                <p id="pContent" class="fs-5 text-muted"></p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-orange w-100 rounded-pill py-2 fw-bold" data-bs-dismiss="modal">OK, FERMER</button>
             </div>
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <script>
-        // Masquer le loader une fois la page chargée
-        window.addEventListener('load', function() {
-            const loader = document.getElementById('fb-loader-wrapper');
-            setTimeout(() => {
-                loader.style.opacity = '0';
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                }, 500);
-            }, 1000); // Délai d'une seconde pour l'effet
-        });
-
-        // Mise à jour du compteur de panier
-        function updateCartBadge() {
-            const cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
-            const badge = document.getElementById('cart-count');
-            if(badge) badge.innerText = cart.length;
-        }
-
-        // Gestion Cookies
-        document.addEventListener("DOMContentLoaded", function() {
-            updateCartBadge();
-            if (!localStorage.getItem("offranel_cookies_accepted")) {
-                setTimeout(() => {
-                    document.getElementById("cookieBanner").style.display = "block";
-                }, 1500);
-            }
-        });
-
-        function acceptCookies() {
-            localStorage.setItem("offranel_cookies_accepted", "true");
-            let banner = document.getElementById("cookieBanner");
-            banner.classList.replace("animate__fadeInUp", "animate__fadeOutDown");
-            setTimeout(() => { banner.style.display = "none"; }, 600);
-        }
-
-        // Gestion Popup 24h
-        document.addEventListener('DOMContentLoaded', async () => {
-            const popupKey = 'offranel_popup_expire';
-            const now = new Date().getTime();
-            const expireTime = localStorage.getItem(popupKey);
-
-            if (!expireTime || now > parseInt(expireTime)) {
-                try {
-                    const response = await fetch('/api/get_popup');
-                    const data = await response.json();
-                    if (data.active) {
-                        document.getElementById('pTitle').innerText = data.title;
-                        document.getElementById('pContent').innerText = data.content;
-                        new bootstrap.Modal(document.getElementById('autoPopup')).show();
-                        localStorage.setItem(popupKey, now + (24 * 60 * 60 * 1000));
-                    }
-                } catch (e) { console.log("Erreur popup:", e); }
-            }
-        });
-    </script>
 <script>
+    // MASQUER LOADER
+    window.addEventListener('load', function() {
+        const loader = document.getElementById('fb-loader-wrapper');
+        setTimeout(() => {
+            loader.style.opacity = '0';
+            setTimeout(() => { loader.style.display = 'none'; }, 500);
+        }, 1000);
+    });
+
+    // PWA INSTALL LOGIC
     let deferredPrompt;
     const installBanner = document.getElementById('pwa-install-banner');
     const installBtn = document.getElementById('btn-install-pwa');
 
     window.addEventListener('beforeinstallprompt', (e) => {
-        // Empêche Chrome d'afficher sa propre bannière par défaut
         e.preventDefault();
-        // Garde l'événement en mémoire pour le déclencher plus tard
         deferredPrompt = e;
-        // Affiche notre bannière personnalisée
         installBanner.style.display = 'block';
     });
 
     installBtn.addEventListener('click', async () => {
         if (deferredPrompt) {
-            // Affiche la fenêtre d'installation native
             deferredPrompt.prompt();
-            // Attend la réponse de l'utilisateur
             const { outcome } = await deferredPrompt.userChoice;
-            console.log(`L'utilisateur a ${outcome} l'installation`);
-            // On cache la bannière
             deferredPrompt = null;
             installBanner.style.display = 'none';
         }
     });
 
-    // Cacher la bannière si l'app est déjà installée
-    window.addEventListener('appinstalled', () => {
-        installBanner.style.display = 'none';
-        console.log('OFFRANEL a été installée avec succès !');
+    // SERVICE WORKER REGISTRATION
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.log(err));
+    }
+
+    // NOTIFICATIONS SYSTEM (Simulation après action)
+    async function checkNotifications() {
+        try {
+            const response = await fetch('/api/get_last_notif'); // Crée cette route côté Python
+            const data = await response.json();
+            const lastId = localStorage.getItem('offranel_last_notif');
+
+            if (data.id && data.id != lastId) {
+                const badge = document.getElementById('notif-count');
+                badge.innerText = "!";
+                badge.classList.remove('d-none');
+            }
+        } catch(e) {}
+    }
+    setInterval(checkNotifications, 60000); // Check chaque minute
+
+    // GESTION PANIER
+    function updateCartBadge() {
+        const cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
+        document.getElementById('cart-count').innerText = cart.length;
+    }
+
+    function acceptCookies() {
+        localStorage.setItem("offranel_cookies_accepted", "true");
+        document.getElementById("cookieBanner").style.display = "none";
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        updateCartBadge();
+        if (!localStorage.getItem("offranel_cookies_accepted")) {
+            setTimeout(() => { document.getElementById("cookieBanner").style.display = "block"; }, 2000);
+        }
     });
 </script>
 </body>

@@ -6,10 +6,38 @@
     <p class="text-muted">Découvrez nos meilleurs articles au meilleur prix.</p>
 </div>
 
+<div class="container mb-4">
+    <form action="/" method="GET" class="row g-2 justify-content-center">
+        <div class="col-9 col-md-6">
+            <div class="input-group shadow-sm rounded-pill overflow-hidden">
+                <span class="input-group-text bg-white border-0"><i class="fas fa-search text-muted"></i></span>
+                <input type="text" name="search" class="form-control border-0" placeholder="Rechercher un article..." value="{{ request.args.get('search', '') }}">
+            </div>
+        </div>
+        <div class="col-3 col-md-2">
+            <button type="submit" class="btn btn-orange w-100 rounded-pill fw-bold">Filtrer</button>
+        </div>
+    </form>
+
+    <div class="d-flex gap-2 mt-3 overflow-auto pb-2 justify-content-start justify-content-md-center" style="white-space: nowrap; scrollbar-width: none;">
+        <a href="/" class="btn btn-sm {{ 'btn-orange' if not request.args.get('category') else 'btn-outline-orange' }} rounded-pill px-3">Tout</a>
+        <a href="/?category=Chaussures" class="btn btn-sm {{ 'btn-orange' if request.args.get('category') == 'Chaussures' else 'btn-outline-orange' }} rounded-pill px-3">👟 Chaussures</a>
+        <a href="/?category=Vêtements" class="btn btn-sm {{ 'btn-orange' if request.args.get('category') == 'Vêtements' else 'btn-outline-orange' }} rounded-pill px-3">👕 Vêtements</a>
+        <a href="/?category=Montres" class="btn btn-sm {{ 'btn-orange' if request.args.get('category') == 'Montres' else 'btn-outline-orange' }} rounded-pill px-3">⌚ Montres</a>
+        <a href="/?category=Accessoires" class="btn btn-sm {{ 'btn-orange' if request.args.get('category') == 'Accessoires' else 'btn-outline-orange' }} rounded-pill px-3">👜 Accessoires</a>
+    </div>
+</div>
+
 <div class="row g-4 mt-2">
     {% for product in products %}
     <div class="col-6 col-md-4 col-lg-3 animate__animated animate__zoomIn">
-        <div class="card h-100 border-0 shadow-sm" style="border-radius: 20px; transition: transform 0.3s; overflow: hidden;">
+        <div class="card h-100 border-0 shadow-sm position-relative" style="border-radius: 20px; transition: transform 0.3s; overflow: hidden; {{ 'opacity: 0.7;' if product.in_stock == False }}">
+
+            {% if product.in_stock == False %}
+            <div class="position-absolute top-50 start-50 translate-middle" style="z-index: 10; transform: translate(-50%, -50%) rotate(-15deg) !important;">
+                <span class="badge bg-danger px-3 py-2 shadow-lg fw-bold" style="font-size: 1.2rem; border: 2px solid white;">VENDU</span>
+            </div>
+            {% endif %}
 
             <div class="p-2 d-flex align-items-center bg-white border-bottom">
                 <img src="{{ product.author_photo if product.author_photo else 'https://ui-avatars.com/api/?name=' ~ product.author_name ~ '&background=FF6B00&color=fff' }}"
@@ -34,18 +62,22 @@
             </a>
 
             <div class="card-body p-3">
-                <div class="d-flex justify-content-between align-items-start mb-1">
-                    <h6 class="fw-bold text-dark mb-0 text-truncate" style="max-width: 100%;">{{ product.title }}</h6>
+                <div class="mb-1">
+                    <span class="badge bg-light text-muted p-1 px-2 mb-2" style="font-size: 0.6rem; border-radius: 5px;">{{ product.category if product.category else 'Général' }}</span>
+                    <h6 class="fw-bold text-dark mb-0 text-truncate">{{ product.title }}</h6>
                 </div>
-                <p class="text-orange fw-bold mb-2">{{ product.price }} {{ product.currency }}</p>
+                <p class="text-orange fw-bold mb-3">{{ product.price }} {{ product.currency }}</p>
 
                 <div class="d-grid gap-2">
                     {% if session.get('user_id') %}
-                        <button onclick="addToCart('{{ product.id }}', '{{ product.title }}', '{{ product.price }}', '{{ product.currency }}', '{{ product.images[0] if product.images else product.photo_url }}')"
-                                class="btn btn-orange btn-sm rounded-pill fw-bold">
-                            <i class="fas fa-cart-plus me-1"></i> Ajouter
-                        </button>
-
+                        {% if product.in_stock != False %}
+                            <button onclick="addToCart('{{ product.id }}', '{{ product.title }}', '{{ product.price }}', '{{ product.currency }}', '{{ product.images[0] if product.images else product.photo_url }}')"
+                                    class="btn btn-orange btn-sm rounded-pill fw-bold">
+                                <i class="fas fa-cart-plus me-1"></i> Ajouter
+                            </button>
+                        {% else %}
+                            <button class="btn btn-secondary btn-sm rounded-pill fw-bold" disabled>Épuisé</button>
+                        {% endif %}
                         <a href="{{ url_for('detail_produit', id=product.id) }}" class="btn btn-outline-orange btn-sm rounded-pill">Détails</a>
                     {% else %}
                         <a href="{{ url_for('login_page') }}" class="btn btn-orange btn-sm rounded-pill fw-bold">
@@ -55,9 +87,14 @@
                     {% endif %}
 
                     {% if session.get('role') == 'admin' %}
-                    <form action="{{ url_for('supprimer', id=product.id) }}" method="POST" onsubmit="return confirm('Supprimer cet article ?');">
-                        <button type="submit" class="btn btn-light btn-sm w-100 text-danger rounded-pill mt-1">Supprimer</button>
-                    </form>
+                    <div class="d-flex gap-1 mt-1">
+                        <button onclick="toggleStock('{{ product.id }}')" class="btn btn-light btn-sm flex-grow-1 rounded-pill border" title="Changer disponibilité">
+                            <i class="fas fa-sync-alt"></i> Stock
+                        </button>
+                        <form action="{{ url_for('supprimer', id=product.id) }}" method="POST" onsubmit="return confirm('Supprimer cet article ?');" class="flex-grow-1">
+                            <button type="submit" class="btn btn-light btn-sm w-100 text-danger rounded-pill border">Supprimer</button>
+                        </form>
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -65,10 +102,8 @@
     </div>
     {% else %}
     <div class="text-center py-5">
-        <h3 class="text-muted">Aucun article pour le moment. 📦</h3>
-        {% if session.get('role') == 'admin' %}
-            <a href="{{ url_for('publier') }}" class="btn btn-orange mt-3 rounded-pill">Ajouter un produit</a>
-        {% endif %}
+        <h3 class="text-muted">Aucun article ne correspond à votre recherche. 📦</h3>
+        <a href="/" class="btn btn-orange mt-3 rounded-pill">Afficher tout</a>
     </div>
     {% endfor %}
 </div>
@@ -76,21 +111,21 @@
 <script>
 function addToCart(id, title, price, currency, image) {
     let cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
-
     const exists = cart.find(item => item.id === id);
     if (exists) {
         alert("Cet article est déjà dans votre panier !");
         return;
     }
-
     cart.push({ id, title, price, currency, image });
     localStorage.setItem('offranel_cart', JSON.stringify(cart));
-
-    if (typeof updateCartBadge === "function") {
-        updateCartBadge();
-    }
-
+    if (typeof updateCartBadge === "function") { updateCartBadge(); }
     alert("Produit ajouté au panier ! 🍊");
+}
+
+async function toggleStock(id) {
+    if(!confirm("Changer la disponibilité de cet article ?")) return;
+    const response = await fetch(`/admin/toggle_stock/${id}`, { method: 'POST' });
+    if (response.ok) { window.location.reload(); }
 }
 </script>
 
@@ -99,29 +134,13 @@ function addToCart(id, title, price, currency, image) {
         transform: translateY(-5px);
         box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
     }
-    .btn-orange {
-        background-color: #FF6B00;
-        color: white;
-        border: none;
-    }
-    .btn-orange:hover {
-        background-color: #e66000;
-        color: white;
-    }
-    .btn-outline-orange {
-        color: #FF6B00;
-        border: 1px solid #FF6B00;
-    }
-    .btn-outline-orange:hover {
-        background-color: #FF6B00;
-        color: white;
-    }
-    .text-orange {
-        color: #FF6B00;
-    }
-    .text-primary {
-        color: #1877F2 !important;
-    }
+    .btn-orange { background-color: #FF6B00; color: white; border: none; }
+    .btn-orange:hover { background-color: #e66000; color: white; }
+    .btn-outline-orange { color: #FF6B00; border: 1px solid #FF6B00; }
+    .btn-outline-orange:hover { background-color: #FF6B00; color: white; }
+    .text-orange { color: #FF6B00; }
+    .text-primary { color: #1877F2 !important; }
+    ::-webkit-scrollbar { display: none; }
 </style>
 
 {% endblock %}

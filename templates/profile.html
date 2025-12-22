@@ -1,19 +1,75 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container mt-5">
+<div class="container mt-5 animate__animated animate__fadeIn">
     <div class="row justify-content-center">
         <div class="col-md-6 glass-card p-5 bg-white shadow text-center" style="border-radius: 30px; border: 2px solid #FF6B00;">
-            <img src="{{ session['photo'] }}" class="rounded-circle mb-3" style="width: 100px; border: 3px solid #FF6B00;">
-            <h2 class="fw-bold">{{ session['name'] }}</h2>
-            <p class="badge bg-orange px-3 rounded-pill">Rôle: {{ session['role'] }}</p>
-            <hr>
-            <div class="d-grid gap-2">
+
+            <div class="position-relative d-inline-block">
+                <img src="{{ session['photo'] }}" class="rounded-circle mb-3 shadow" style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #FF6B00;">
                 {% if session['role'] == 'admin' %}
-                <a href="/publier" class="btn btn-orange rounded-pill">Publier un article</a>
+                <span class="position-absolute bottom-0 end-0 bg-white rounded-circle p-1" style="transform: translate(-10%, -20%);">
+                    <i class="fas fa-check-circle text-primary" style="font-size: 1.5rem;"></i>
+                </span>
                 {% endif %}
-                <a href="/logout" class="btn btn-outline-danger rounded-pill">Déconnexion</a>
+            </div>
+
+            <h2 class="fw-bold mt-2">{{ session['name'] }}</h2>
+            <p class="text-muted small mb-3">{{ session['email'] if session['email'] else 'Compte Client Offranel' }}</p>
+
+            <div class="d-flex justify-content-center gap-2 mb-4">
+                <span class="badge bg-orange px-3 py-2 rounded-pill shadow-sm">Rôle: {{ session['role']|capitalize }}</span>
+                <span id="cart-stat-badge" class="badge bg-light text-dark px-3 py-2 rounded-pill border shadow-sm">0 au panier</span>
+            </div>
+
+            <hr class="my-4 opacity-25">
+
+            <div class="d-grid gap-3">
+                {% if session['role'] == 'admin' %}
+                <h6 class="text-start fw-bold text-orange mb-0"><i class="fas fa-tools me-2"></i>Administration</h6>
+                <a href="/admin/dashboard" class="btn btn-orange rounded-pill py-2 shadow-sm">
+                    <i class="fas fa-chart-line me-2"></i>Tableau de Bord
+                </a>
+                <a href="/publier" class="btn btn-outline-orange rounded-pill py-2">
+                    <i class="fas fa-plus-circle me-2"></i>Publier un article
+                </a>
+                {% else %}
+                <h6 class="text-start fw-bold text-orange mb-0"><i class="fas fa-shopping-bag me-2"></i>Mes Achats</h6>
+                <a href="/panier" class="btn btn-orange rounded-pill py-2 shadow-sm">
+                    <i class="fas fa-shopping-cart me-2"></i>Voir mon Panier
+                </a>
+                {% endif %}
+
+                <a href="/" class="btn btn-light rounded-pill py-2 text-muted border">
+                    <i class="fas fa-home me-2"></i>Retour à la boutique
+                </a>
+
+                <a href="/logout" class="btn btn-outline-danger rounded-pill py-2 mt-2">
+                    <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
+                </a>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    // Petite fonction pour afficher le nombre d'articles au panier sur le profil
+    function updateProfileStats() {
+        const cart = JSON.parse(localStorage.getItem('offranel_cart') || '[]');
+        const badge = document.getElementById('cart-stat-badge');
+        if (badge) {
+            badge.innerText = cart.length + (cart.length > 1 ? " articles" : " article") + " au panier";
+        }
+    }
+    document.addEventListener('DOMContentLoaded', updateProfileStats);
+</script>
+
+<style>
+    .bg-orange { background-color: #FF6B00 !important; color: white; }
+    .btn-orange { background-color: #FF6B00; color: white; border: none; }
+    .btn-orange:hover { background-color: #e66000; color: white; }
+    .btn-outline-orange { color: #FF6B00; border: 1.5px solid #FF6B00; }
+    .btn-outline-orange:hover { background-color: #FF6B00; color: white; }
+    .text-orange { color: #FF6B00; }
+    .text-primary { color: #1877F2 !important; } /* Bleu Facebook */
+</style>
 {% endblock %}

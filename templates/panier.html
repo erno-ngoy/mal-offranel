@@ -13,30 +13,38 @@
         </div>
 
         <div class="col-lg-4">
-            <div class="card p-4 shadow-sm border-0" style="border-radius: 20px; border: 1px solid rgba(255,107,0,0.2);">
-                <h5 class="fw-bold mb-4">Résumé</h5>
+            <div class="card p-4 shadow-sm border-0 sticky-top" style="border-radius: 20px; border: 1px solid rgba(255,107,0,0.2); top: 90px;">
+                <h5 class="fw-bold mb-4">Résumé de la commande</h5>
                 <div class="d-flex justify-content-between mb-3">
                     <span class="text-muted">Nombre d'articles</span>
                     <span id="cart-count-summary" class="fw-bold">0</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted">Livraison</span>
+                    <span class="badge bg-success-subtle text-success rounded-pill">À discuter sur WhatsApp</span>
                 </div>
                 <hr>
                 <div class="d-flex justify-content-between mb-4">
                     <span class="fw-bold">Total Estimé</span>
                     <h4 class="fw-bold text-orange" id="total-price">0 $</h4>
                 </div>
-                <button onclick="checkout()" class="btn btn-orange w-100 py-3 fw-bold rounded-pill shadow-sm">
-                    <i class="fab fa-whatsapp me-2"></i>COMMANDER VIA WHATSAPP
+
+                <button onclick="checkout()" class="btn btn-orange w-100 py-3 fw-bold rounded-pill shadow-sm mb-3">
+                    <i class="fab fa-whatsapp me-2"></i>COMMANDER MAINTENANT
                 </button>
-                <a href="/" class="btn btn-link w-100 text-muted mt-3 text-decoration-none small">
-                    <i class="fas fa-arrow-left me-1"></i> Continuer mes achats
-                </a>
+
+                <div class="text-center">
+                    <p class="text-muted small mb-2"><i class="fas fa-shield-alt me-1"></i> Paiement sécurisé à la livraison</p>
+                    <a href="/" class="btn btn-link w-100 text-muted text-decoration-none small">
+                        <i class="fas fa-arrow-left me-1"></i> Continuer mes achats
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // Utilisation de la même clé que dans index.html
     const CART_KEY = 'offranel_cart';
 
     function renderCart() {
@@ -46,14 +54,15 @@
         const countEl = document.getElementById('cart-count-summary');
 
         let total = 0;
-        let currency = "$"; // Par défaut
+        let currency = "$";
 
         if (cart.length === 0) {
             list.innerHTML = `
                 <div class="text-center py-5 bg-white shadow-sm" style="border-radius: 20px;">
-                    <i class="fas fa-shopping-basket fa-3x text-light mb-3"></i>
-                    <h4 class="text-muted">Le panier est vide 😕</h4>
-                    <p class="small text-muted">Parcourez nos articles pour commencer vos achats.</p>
+                    <i class="fas fa-shopping-basket fa-4x text-light mb-3"></i>
+                    <h4 class="text-muted">Votre panier est vide 😕</h4>
+                    <p class="small text-muted mb-4">Découvrez nos articles exclusifs pour remplir votre panier.</p>
+                    <a href="/" class="btn btn-orange px-4 rounded-pill">Voir la boutique</a>
                 </div>`;
             totalPriceEl.innerText = "0 $";
             countEl.innerText = "0";
@@ -62,9 +71,9 @@
 
         list.innerHTML = cart.map((item, index) => {
             total += parseFloat(item.price);
-            currency = item.currency; // Utilise la devise du dernier item ajouté
+            currency = item.currency || "$";
             return `
-                <div class="card mb-3 p-3 border-0 shadow-sm rounded-4 animate__animated animate__fadeInUp" style="transition: 0.3s;">
+                <div class="card mb-3 p-3 border-0 shadow-sm rounded-4 animate__animated animate__fadeInUp">
                     <div class="d-flex align-items-center">
                         <img src="${item.image}" width="90" height="90" class="rounded-3 me-3" style="object-fit: cover; border: 1px solid #eee;">
                         <div class="flex-grow-1">
@@ -73,7 +82,7 @@
                                 <span class="text-orange fw-bold fs-5">${item.price} ${item.currency}</span>
                             </div>
                         </div>
-                        <button onclick="removeItem(${index})" class="btn btn-light btn-sm text-danger rounded-circle p-2" title="Supprimer">
+                        <button onclick="removeItem(${index})" class="btn btn-light btn-sm text-danger rounded-circle p-2 shadow-sm" title="Supprimer">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -91,7 +100,6 @@
         localStorage.setItem(CART_KEY, JSON.stringify(cart));
         renderCart();
 
-        // Mettre à jour le badge global dans base.html
         if (typeof updateCartBadge === "function") {
             updateCartBadge();
         }
@@ -101,26 +109,32 @@
         const cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
         if (cart.length === 0) return alert("Votre panier est vide !");
 
-        let message = "Bonjour Offranel Shop ! 🍊\nJe souhaite commander les articles suivants :\n\n";
+        // --- GÉNÉRATION DU BON DE COMMANDE PRO ---
+        let message = "🚀 *NOUVELLE COMMANDE - OFFRANEL SHOP*\n";
+        message += "----------------------------------------\n\n";
+
         let total = 0;
         let currency = "";
 
         cart.forEach((item, i) => {
-            message += `${i+1}. *${item.title}* - ${item.price} ${item.currency}\n`;
+            message += `📦 *Article ${i+1}:* ${item.title}\n`;
+            message += `💰 *Prix:* ${item.price} ${item.currency}\n`;
+            message += `🔗 *Lien:* ${window.location.origin}/produit/${item.id}\n`;
+            message += `----------------------------------------\n`;
             total += parseFloat(item.price);
             currency = item.currency;
         });
 
-        message += `\n*Total : ${total} ${currency}*`;
-        message += `\n\nClient : {{ session.get('name') }}`;
+        message += `\n💵 *TOTAL À PAYER : ${total} ${currency}*`;
+        message += `\n\n👤 *Client :* {{ session.get('name') }}`;
+        message += `\n📅 *Date :* ${new Date().toLocaleDateString('fr-FR')}`;
+        message += `\n\n_Veuillez confirmer la disponibilité de ces articles pour la livraison._`;
 
         const encodedMessage = encodeURIComponent(message);
-        // Remplacez le numéro ci-dessous par votre numéro WhatsApp réel
         const whatsappNumber = "243828035654";
         window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
     }
 
-    // Initialisation
     document.addEventListener('DOMContentLoaded', renderCart);
 </script>
 
@@ -128,6 +142,8 @@
     .text-orange { color: #FF6B00 !important; }
     .btn-orange { background: #FF6B00; color: white; border: none; }
     .btn-orange:hover { background: #e66000; color: white; }
-    .card:hover { transform: scale(1.01); }
+    .bg-success-subtle { background-color: #d1e7dd; }
+    .text-success { color: #0f5132 !important; }
+    .card:hover { transform: translateY(-2px); transition: 0.3s; }
 </style>
 {% endblock %}

@@ -3,14 +3,19 @@
 {% block content %}
 <div class="container animate__animated animate__fadeIn">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">Stats Offranel 🍊</h2>
-        <span class="badge bg-success rounded-pill px-3 py-2">En direct</span>
+        <div>
+            <h2 class="fw-bold text-dark">Stats <span class="text-orange">Offranel 🍊</span></h2>
+            <p class="text-muted small">Vue d'ensemble de votre activité en temps réel.</p>
+        </div>
+        <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm animate__animated animate__pulse animate__infinite">
+            <i class="fas fa-circle me-1 small"></i> En direct
+        </span>
     </div>
 
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-4">
-            <div class="glass-card text-center p-3 h-100 shadow-sm">
-                <div class="bg-orange-light rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+            <div class="glass-card text-center p-3 h-100 shadow-sm border-0">
+                <div class="bg-orange-light rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
                     <i class="fas fa-users text-orange fa-lg"></i>
                 </div>
                 <h3 class="fw-bold mb-0">{{ stats.total_users }}</h3>
@@ -19,8 +24,8 @@
         </div>
 
         <div class="col-6 col-md-4">
-            <div class="glass-card text-center p-3 h-100 shadow-sm">
-                <div class="bg-dark-light rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background: #f0f0f0;">
+            <div class="glass-card text-center p-3 h-100 shadow-sm border-0">
+                <div class="bg-dark-light rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 55px; height: 55px; background: #f0f0f0;">
                     <i class="fas fa-box-open text-dark fa-lg"></i>
                 </div>
                 <h3 class="fw-bold mb-0">{{ stats.total_products }}</h3>
@@ -29,39 +34,44 @@
         </div>
 
         <div class="col-12 col-md-4">
-            <div class="glass-card text-center p-3 h-100 shadow-sm d-flex flex-column justify-content-center">
+            <div class="glass-card text-center p-3 h-100 shadow-sm d-flex flex-column justify-content-center border-0" style="background: linear-gradient(145deg, #ffffff, #fff5ee);">
                 <div class="d-flex align-items-center justify-content-center">
                     <span class="spinner-grow spinner-grow-sm text-success me-2"></span>
                     <h3 class="fw-bold mb-0">{{ stats.active_now }}</h3>
                 </div>
-                <p class="text-muted small mb-0">Actif en ce moment</p>
+                <p class="text-muted small mb-0 fw-bold">Actif en ce moment</p>
             </div>
         </div>
     </div>
 
     <div class="row mb-4">
         <div class="col-12">
-            <div class="glass-card p-4 shadow-sm border-0" style="border-left: 5px solid #FF6B00 !important;">
-                <h5 class="fw-bold mb-3"><i class="fas fa-bullhorn me-2 text-orange"></i>Configuration du Pop-up (Annonce)</h5>
-                <p class="small text-muted">Ce message s'affichera automatiquement aux clients une seule fois toutes les 24 heures.</p>
+            <div class="glass-card p-4 shadow-sm border-0" style="border-left: 5px solid #FF6B00 !important; border-radius: 20px;">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-orange p-2 rounded-3 me-3">
+                        <i class="fas fa-bullhorn text-white"></i>
+                    </div>
+                    <h5 class="fw-bold mb-0">Configuration du Pop-up (Annonce)</h5>
+                </div>
+                <p class="small text-muted mb-4">Ce message s'affichera automatiquement aux clients une seule fois toutes les 24 heures pour annoncer une promo ou une info importante.</p>
 
                 <div class="row g-3">
                     <div class="col-md-5">
-                        <label class="form-label small fw-bold">Titre du Pop-up</label>
-                        <input type="text" id="adminPopTitle" class="form-control rounded-pill" value="{{ popup.title }}" placeholder="Ex: Promotion de Noël !">
+                        <label class="form-label small fw-bold text-dark">Titre du Pop-up</label>
+                        <input type="text" id="adminPopTitle" class="form-control rounded-pill border-orange-light" value="{{ popup.title }}" placeholder="Ex: Promotion de Noël ! 🎄">
                     </div>
                     <div class="col-md-7">
-                        <label class="form-label small fw-bold">Message / Contenu</label>
-                        <textarea id="adminPopContent" class="form-control rounded-4" rows="2" placeholder="Écrivez votre message ici...">{{ popup.content }}</textarea>
+                        <label class="form-label small fw-bold text-dark">Message / Contenu</label>
+                        <textarea id="adminPopContent" class="form-control rounded-4 border-orange-light" rows="2" placeholder="Écrivez votre message ici...">{{ popup.content }}</textarea>
                     </div>
                 </div>
 
-                <div class="d-flex align-items-center justify-content-between mt-3">
-                    <div class="form-check form-switch">
+                <div class="d-flex flex-wrap align-items-center justify-content-between mt-4 gap-3">
+                    <div class="form-check form-switch custom-switch">
                         <input class="form-check-input" type="checkbox" id="adminPopActive" {% if popup.active %}checked{% endif %}>
-                        <label class="form-check-label fw-bold small" for="adminPopActive">Activer l'affichage</label>
+                        <label class="form-check-label fw-bold small text-muted" for="adminPopActive">Activer l'affichage pour les clients</label>
                     </div>
-                    <button onclick="savePopup()" class="btn btn-orange rounded-pill px-4 fw-bold shadow-sm">
+                    <button onclick="savePopup()" class="btn btn-orange rounded-pill px-5 fw-bold shadow-sm transition-all">
                         <i class="fas fa-save me-2"></i>Mettre à jour l'annonce
                     </button>
                 </div>
@@ -69,29 +79,34 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-lg-8 mb-4">
-            <div class="glass-card p-4 shadow-sm">
-                <h5 class="fw-bold mb-4"><i class="fas fa-chart-pie me-2 text-orange"></i>Répartition du Stock</h5>
-                <div style="max-height: 300px; position: relative;">
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="glass-card p-4 shadow-sm border-0 h-100" style="border-radius: 20px;">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-chart-pie me-2 text-orange"></i>Répartition du Stock</h5>
+                    <small class="text-muted">Proportion Users vs Produits</small>
+                </div>
+                <div style="height: 300px; position: relative;">
                     <canvas id="offranelChart"></canvas>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-4">
-            <div class="glass-card p-4 shadow-sm h-100">
-                <h5 class="fw-bold mb-3">Actions Admin</h5>
-                <div class="d-grid gap-2">
-                    <a href="/publier" class="btn btn-orange w-100">
-                        <i class="fas fa-plus me-2"></i>Nouveau Produit
+            <div class="glass-card p-4 shadow-sm h-100 border-0" style="border-radius: 20px;">
+                <h5 class="fw-bold mb-4">Actions Rapides</h5>
+                <div class="d-grid gap-3">
+                    <a href="/publier" class="btn btn-orange w-100 py-3 rounded-pill fw-bold shadow-sm">
+                        <i class="fas fa-plus-circle me-2"></i>Nouveau Produit
                     </a>
-                    <a href="/admin/modifier-a-propos" class="btn btn-outline-orange w-100">
-                        <i class="fas fa-edit me-2"></i>Editer "Qui sommes-nous"
+                    <a href="/admin/modifier-a-propos" class="btn btn-outline-orange w-100 py-3 rounded-pill fw-bold">
+                        <i class="fas fa-edit me-2"></i>Editer "À Propos"
                     </a>
-                    <button onclick="location.reload()" class="btn btn-outline-dark w-100">
-                        <i class="fas fa-sync me-2"></i>Actualiser les stats
+                    <button onclick="location.reload()" class="btn btn-light w-100 py-3 rounded-pill fw-bold border text-muted">
+                        <i class="fas fa-sync-alt me-2"></i>Actualiser les stats
                     </button>
+                    <hr class="my-2">
+                    <p class="small text-muted text-center italic">Dernière mise à jour : <br><strong>{% set d = stats.last_update if stats.last_update else 'Maintenant' %}{{ d }}</strong></p>
                 </div>
             </div>
         </div>
@@ -100,8 +115,12 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // FONCTION POUR SAUVEGARDER LE POPUP
+    // SAUVEGARDE DU POPUP
     async function savePopup() {
+        const btn = document.querySelector('button[onclick="savePopup()"]');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enregistrement...';
+
         const data = {
             title: document.getElementById('adminPopTitle').value,
             content: document.getElementById('adminPopContent').value,
@@ -115,6 +134,7 @@
                 body: JSON.stringify(data)
             });
             if (res.ok) {
+                // Animation de succès
                 alert("📢 Annonce enregistrée avec succès !");
             } else {
                 alert("Erreur lors de l'enregistrement.");
@@ -122,10 +142,13 @@
         } catch (e) {
             console.error(e);
             alert("Erreur de connexion au serveur.");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save me-2"></i>Mettre à jour l'annonce';
         }
     }
 
-    // GRAPHIQUE
+    // INITIALISATION DU GRAPHIQUE
     document.addEventListener('DOMContentLoaded', function() {
         const ctx = document.getElementById('offranelChart').getContext('2d');
         new Chart(ctx, {
@@ -135,15 +158,23 @@
                 datasets: [{
                     data: [{{ stats.total_users }}, {{ stats.total_products }}],
                     backgroundColor: ['#FF6B00', '#1A1A1A'],
-                    hoverOffset: 4,
+                    hoverOffset: 15,
+                    borderWidth: 0,
                     borderRadius: 10
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                cutout: '70%',
                 plugins: {
-                    legend: { position: 'bottom' }
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            font: { family: 'Poppins', size: 12 }
+                        }
+                    }
                 }
             }
         });
@@ -152,15 +183,24 @@
 
 <style>
     .bg-orange-light { background-color: rgba(255, 107, 0, 0.1); }
+    .border-orange-light { border: 1px solid rgba(255, 107, 0, 0.2) !important; }
     .glass-card {
         background: white;
         border-radius: 20px;
-        border: 1px solid rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
     }
-    .btn-orange { background-color: #FF6B00; color: white; border-radius: 50px; }
-    .btn-orange:hover { background-color: #e66000; color: white; }
-    .btn-outline-orange { border: 1px solid #FF6B00; color: #FF6B00; border-radius: 50px; }
+    .glass-card:hover { transform: translateY(-3px); }
+    .btn-orange { background-color: #FF6B00; color: white; border: none; }
+    .btn-orange:hover { background-color: #e66000; color: white; transform: scale(1.02); }
+    .btn-outline-orange { border: 2px solid #FF6B00; color: #FF6B00; }
     .btn-outline-orange:hover { background-color: #FF6B00; color: white; }
     .text-orange { color: #FF6B00; }
+    .transition-all { transition: all 0.3s ease; }
+
+    /* Switch personnalisé orange */
+    .form-check-input:checked {
+        background-color: #FF6B00;
+        border-color: #FF6B00;
+    }
 </style>
 {% endblock %}

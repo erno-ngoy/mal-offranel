@@ -53,6 +53,24 @@
             border: 2px solid white;
         }
 
+        /* --- NOUVEAUTÉ : SEARCH BAR --- */
+        .search-container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .search-input {
+            border-radius: 50px 0 0 50px !important;
+            border: 1px solid #eee;
+            padding-left: 20px;
+        }
+        .search-btn {
+            border-radius: 0 50px 50px 0 !important;
+            background: var(--offranel-orange);
+            color: white;
+            border: none;
+            padding: 0 20px;
+        }
+
         /* --- COOKIE BANNER DESIGN --- */
         .cookie-banner {
             position: fixed;
@@ -101,9 +119,16 @@
             </div>
 
             <div class="collapse navbar-collapse" id="navMenu">
+                <form action="/" method="GET" class="d-flex mx-auto my-3 my-lg-0 search-container w-100 px-lg-4">
+                    <div class="input-group">
+                        <input type="text" name="search" class="form-control search-input" placeholder="Rechercher un article..." value="{{ request.args.get('search', '') }}">
+                        <button class="btn search-btn" type="submit"><i class="fas fa-search"></i></button>
+                    </div>
+                </form>
+
                 <div class="navbar-nav ms-auto align-items-center pt-3 pt-lg-0">
                     <a class="nav-link fw-semibold" href="/"><i class="fas fa-home me-1"></i> Accueil</a>
-                    <a class="nav-link fw-semibold" href="/a-propos">Qui sommes-nous ?</a>
+                    <a class="nav-link fw-semibold" href="/a-propos">Qui nous ?</a>
 
                     {% if session.get('user_id') %}
                         {% if session.get('role') == 'admin' %}
@@ -142,6 +167,20 @@
             </div>
         </div>
     </nav>
+
+    <div class="container mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show rounded-pill px-4 shadow-sm border-0 animate__animated animate__headShake" role="alert">
+                <i class="fas {{ 'fa-check-circle' if category == 'success' else 'fa-exclamation-circle' }} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+    </div>
 
     <div class="container mt-3 mt-lg-4 mb-5">
         {% block content %}{% endblock %}

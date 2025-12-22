@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="row g-4">
+<div class="row g-4 animate__animated animate__fadeIn">
     <div class="col-lg-7">
         <div class="glass-card p-4 bg-white shadow" style="border-radius: 20px; border: 2px solid #FF6B00;">
             <h3 class="fw-bold mb-4" style="color: #FF6B00;">📦 Publier un article</h3>
@@ -8,31 +8,44 @@
             <form id="uploadForm">
                 <div class="mb-3">
                     <label class="small fw-bold">Nom du produit</label>
-                    <input type="text" id="title" class="form-control rounded-pill border-orange" placeholder="Ex: Chaussure Nike" required>
+                    <input type="text" id="title" class="form-control rounded-pill border-orange" placeholder="Ex: Nike Air Max 270" required>
                 </div>
 
                 <div class="row">
-                    <div class="col-7 mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label class="small fw-bold">Catégorie</label>
+                        <select id="category" class="form-select rounded-pill border-orange" required>
+                            <option value="" selected disabled>Choisir...</option>
+                            <option value="Chaussures">👟 Chaussures</option>
+                            <option value="Vêtements">👕 Vêtements</option>
+                            <option value="Montres">⌚ Montres</option>
+                            <option value="Accessoires">👜 Accessoires</option>
+                            <option value="Électronique">📱 Électronique</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 col-7 mb-3">
                         <label class="small fw-bold">Prix</label>
                         <input type="number" id="price" class="form-control rounded-pill border-orange" placeholder="0" required>
                     </div>
-                    <div class="col-5 mb-3">
+                    <div class="col-md-2 col-5 mb-3">
                         <label class="small fw-bold">Devise</label>
                         <select id="currency" class="form-select rounded-pill border-orange">
-                            <option value="$">$ USD</option>
-                            <option value="FC">FC CDF</option>
+                            <option value="$">$</option>
+                            <option value="FC">FC</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="small fw-bold">Photo de l'article 📸</label>
-                    <input type="file" id="fileInput" class="form-control rounded-pill" accept="image/*" required>
+                    <label class="small fw-bold">Photos de l'article (Max 3) 📸</label>
+                    <input type="file" id="fileInput" class="form-control rounded-pill" accept="image/*" multiple>
+                    <div id="previewContainer" class="d-flex gap-2 mt-2">
+                        </div>
                 </div>
 
                 <div class="mb-3">
                     <label class="small fw-bold">Description 📝</label>
-                    <textarea id="description" class="form-control rounded-4 border-orange" rows="3" placeholder="Détails..."></textarea>
+                    <textarea id="description" class="form-control rounded-4 border-orange" rows="3" placeholder="Taille, couleur, état..."></textarea>
                 </div>
 
                 <button type="submit" id="btnSubmit" class="btn btn-orange w-100 py-3 rounded-pill fw-bold shadow">
@@ -42,37 +55,40 @@
 
             <div id="loader" class="text-center mt-3 d-none">
                 <div class="spinner-border text-orange"></div>
-                <p class="text-orange small mt-2 fw-bold">Publication en cours...</p>
+                <p class="text-orange small mt-2 fw-bold">Traitement des images et publication...</p>
             </div>
         </div>
     </div>
 
     <div class="col-lg-5">
         <div class="sticky-top" style="top: 100px;">
-            <h5 class="text-center text-muted small fw-bold mb-3">APERÇU DU CLIENT ✨</h5>
+            <h5 class="text-center text-muted small fw-bold mb-3">APERÇU EN DIRECT ✨</h5>
             <div class="product-card shadow-lg mx-auto bg-white" style="max-width: 320px; border-radius: 15px; overflow: hidden;">
 
                 <div class="p-3 d-flex align-items-center border-bottom">
-                    <img src="{{ session.get('photo') }}" class="rounded-circle me-2 border border-orange" width="40" height="40" style="object-fit: cover;">
+                    <img src="{{ session.get('photo') }}" class="rounded-circle me-2 border border-orange" width="35" height="35" style="object-fit: cover;">
                     <div>
                         <div class="d-flex align-items-center">
-                            <span class="fw-bold small me-1">{{ session.get('name') }}</span>
-                            <i class="fas fa-check-circle text-primary" style="font-size: 0.85rem;" title="Compte Certifié"></i>
+                            <span class="fw-bold" style="font-size: 0.75rem;">{{ session.get('name') }}</span>
+                            <i class="fas fa-check-circle text-primary ms-1" style="font-size: 0.7rem;"></i>
                         </div>
-                        <p class="text-muted mb-0" style="font-size: 0.65rem;">Administrateur • À l'instant</p>
+                        <p class="text-muted mb-0" style="font-size: 0.6rem;">Admin • À l'instant</p>
                     </div>
                 </div>
 
-                <img id="previewImg" src="https://placehold.co/400x400?text=Votre+Photo" style="width: 100%; height: 250px; object-fit: cover;">
+                <div class="position-relative">
+                    <img id="previewImg" src="https://placehold.co/400x400?text=Photo+Principale" style="width: 100%; height: 250px; object-fit: cover;">
+                    <span id="pCat" class="badge bg-dark position-absolute top-0 end-0 m-2 opacity-75">Catégorie</span>
+                </div>
 
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 id="pTitle" class="fw-bold mb-0">Titre</h5>
+                        <h6 id="pTitle" class="fw-bold mb-0 text-truncate" style="max-width: 70%;">Titre du produit</h6>
                         <span id="pPrice" class="text-orange fw-bold">0 $</span>
                     </div>
-                    <p id="pDesc" class="text-muted small mt-2">La description apparaîtra ici...</p>
-                    <button class="btn btn-orange w-100 rounded-pill disabled" style="font-size: 0.8rem;">
-                        <i class="fab fa-whatsapp me-2"></i>Commander sur WhatsApp
+                    <p id="pDesc" class="text-muted mt-2 mb-3" style="font-size: 0.75rem; min-height: 40px;">La description...</p>
+                    <button class="btn btn-orange w-100 rounded-pill disabled btn-sm py-2">
+                        <i class="fab fa-whatsapp me-2"></i>Commander
                     </button>
                 </div>
             </div>
@@ -82,9 +98,10 @@
 
 <script>
 const fileInput = document.getElementById('fileInput');
+const previewContainer = document.getElementById('previewContainer');
 const previewImg = document.getElementById('previewImg');
+let photoList = [];
 
-// Fonction pour compresser la photo (évite l'erreur 500)
 const compressPhoto = (file) => {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -100,32 +117,49 @@ const compressPhoto = (file) => {
                 canvas.width = w; canvas.height = h;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, w, h);
-                resolve(canvas.toDataURL('image/jpeg', 0.7)); // 70% de qualité
+                resolve(canvas.toDataURL('image/jpeg', 0.6)); // Compression 60% pour supporter 3 photos
             };
         };
     });
 };
 
-// Afficher l'aperçu dès qu'on choisit la photo
 fileInput.addEventListener('change', async function() {
-    if (this.files[0]) {
-        const base64 = await compressPhoto(this.files[0]);
-        previewImg.src = base64;
+    photoList = [];
+    previewContainer.innerHTML = "";
+
+    const files = Array.from(this.files).slice(0, 3); // Limite à 3
+
+    for (let file of files) {
+        const base64 = await compressPhoto(file);
+        photoList.push(base64);
+
+        // Ajouter miniature
+        const thumb = document.createElement('img');
+        thumb.src = base64;
+        thumb.style = "width: 60px; height: 60px; object-fit: cover; border-radius: 10px; border: 2px solid #FF6B00;";
+        thumb.classList.add('animate__animated', 'animate__scaleIn');
+        previewContainer.appendChild(thumb);
+    }
+
+    if (photoList.length > 0) {
+        previewImg.src = photoList[0];
     }
 });
 
-// Syncroniser le texte en temps réel
-['title', 'price', 'currency', 'description'].forEach(id => {
+// Syncronisation de l'aperçu
+['title', 'price', 'currency', 'description', 'category'].forEach(id => {
     document.getElementById(id).addEventListener('input', () => {
-        document.getElementById('pTitle').innerText = document.getElementById('title').value || "Titre";
+        document.getElementById('pTitle').innerText = document.getElementById('title').value || "Titre du produit";
         document.getElementById('pPrice').innerText = `${document.getElementById('price').value || '0'} ${document.getElementById('currency').value}`;
         document.getElementById('pDesc').innerText = document.getElementById('description').value || "La description...";
+        document.getElementById('pCat').innerText = document.getElementById('category').value || "Catégorie";
     });
 });
 
-// Envoi du formulaire
 document.getElementById('uploadForm').onsubmit = async (e) => {
     e.preventDefault();
+    if (photoList.length === 0) return alert("Ajoutez au moins une photo !");
+
     const btn = document.getElementById('btnSubmit');
     const loader = document.getElementById('loader');
 
@@ -133,8 +167,6 @@ document.getElementById('uploadForm').onsubmit = async (e) => {
     loader.classList.remove('d-none');
 
     try {
-        const photoBase64 = await compressPhoto(fileInput.files[0]);
-
         const response = await fetch('/publier', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -142,20 +174,22 @@ document.getElementById('uploadForm').onsubmit = async (e) => {
                 title: document.getElementById('title').value,
                 price: document.getElementById('price').value,
                 currency: document.getElementById('currency').value,
+                category: document.getElementById('category').value,
                 description: document.getElementById('description').value,
-                photo_url: photoBase64
+                images: photoList // Envoie du tableau de photos
             })
         });
 
         if (response.ok) {
             window.location.href = "/";
         } else {
-            alert("Erreur Serveur. La photo est peut-être trop lourde.");
+            const err = await response.json();
+            alert("Erreur: " + (err.message || "Fichier trop lourd"));
             btn.disabled = false;
             loader.classList.add('d-none');
         }
     } catch (err) {
-        alert("Problème de connexion.");
+        alert("Erreur de connexion réseau.");
         btn.disabled = false;
         loader.classList.add('d-none');
     }
@@ -167,6 +201,6 @@ document.getElementById('uploadForm').onsubmit = async (e) => {
     .btn-orange { background: #FF6B00; color: white; border: none; }
     .btn-orange:hover { background: #e66000; color: white; }
     .text-orange { color: #FF6B00; }
-    .text-primary { color: #1877F2 !important; } /* Bleu Facebook pour le badge */
+    .text-primary { color: #1877F2 !important; }
 </style>
 {% endblock %}

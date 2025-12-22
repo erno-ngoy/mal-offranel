@@ -1,10 +1,117 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offranel Shop 🍊</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8f9fa;
+            padding-top: 70px; /* Espace pour la navbar fixe */
+        }
+        .navbar {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .navbar-brand fw-bold { color: #FF6B00; }
+        .btn-orange { background-color: #FF6B00; color: white; border-radius: 20px; }
+        .btn-orange:hover { background-color: #e66000; color: white; }
+        .cart-badge {
+            font-size: 0.65rem;
+            transform: translate(-5px, -10px);
+        }
+        .nav-link { font-weight: 500; color: #444; }
+        .nav-link:hover { color: #FF6B00; }
+    </style>
 </head>
 <body>
 
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold d-flex align-items-center" href="/" style="color: #FF6B00;">
+                <i class="fas fa-shopping-bag me-2"></i> Offranel
+            </a>
+
+            <div class="d-flex align-items-center order-lg-last">
+                <a href="/panier" class="nav-link position-relative me-3">
+                    <i class="fas fa-shopping-cart fa-lg"></i>
+                    <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger cart-badge d-none">0</span>
+                </a>
+
+                {% if session.get('user_id') %}
+                <a href="/profile" class="d-flex align-items-center text-decoration-none">
+                    <img src="{{ session.get('photo') }}" class="rounded-circle border border-orange" width="35" height="35" style="object-fit: cover;">
+                </a>
+                {% else %}
+                <a href="/login" class="btn btn-orange btn-sm px-3 fw-bold">Connexion</a>
+                {% endif %}
+            </div>
+
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto me-lg-4">
+                    <li class="nav-item"><a class="nav-link" href="/">Boutique</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/a-propos">À propos</a></li>
+                    {% if session.get('role') == 'admin' %}
+                    <li class="nav-item"><a class="nav-link text-orange fw-bold" href="/admin/dashboard">Admin</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show rounded-pill px-4 shadow-sm" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+    </div>
+
+    <main class="container py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-white border-top py-4 mt-5">
+        <div class="container text-center">
+            <p class="text-muted small mb-0">© 2025 Offranel Shop. Tous droits réservés.</p>
+            <div class="mt-2">
+                <a href="#" class="text-muted mx-2"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="text-muted mx-2"><i class="fab fa-whatsapp"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Fonction globale pour mettre à jour le badge du panier
+        function updateCartBadge() {
+            const cart = JSON.parse(localStorage.getItem('offranel_cart') || '[]');
+            const badge = document.getElementById('cart-count');
+            if (cart.length > 0) {
+                badge.innerText = cart.length;
+                badge.classList.remove('d-none');
+            } else {
+                badge.classList.add('d-none');
+            }
+        }
+
+        // Exécuter au chargement
+        document.addEventListener('DOMContentLoaded', updateCartBadge);
+    </script>
 </body>
 </html>

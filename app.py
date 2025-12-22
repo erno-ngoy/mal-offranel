@@ -25,7 +25,8 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 
-# --- DÉCORATEUR POUR BLOQUER LES UTILISATEURS NON CONNECTÉS ---
+
+# --- DÉCORATEUR DE SÉCURITÉ ---
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -33,19 +34,31 @@ def login_required(f):
             flash("Veuillez vous connecter pour effectuer cette action 🔐", "warning")
             return redirect(url_for('login_page'))
         return f(*args, **kwargs)
+
     return decorated_function
+
 
 # --- ROUTES UTILISATEURS ---
 
 @app.route('/')
 def index():
+    # Récupération des paramètres de recherche et filtrage
+    search_query = request.args.get('search', '').lower()
+    category_filter = request.args.get('category', '')
+
     try:
         products_stream = db.collection('products').order_by('created_at', direction='DESCENDING').stream()
         products = []
         for doc in products_stream:
             p = doc.to_dict()
             p['id'] = doc.id
-            products.append(p)
+
+            # Application des filtres côté serveur (Python)
+            match_search = search_query in p.get('title', '').lower() if search_query else True
+            match_cat = p.get('category') == category_filter if category_filter else True
+
+            if match_search and match_cat:
+                products.append(p)
     except Exception as e:
         print(f"Erreur Firestore : {e}")
         products = []
@@ -54,7 +67,6 @@ def index():
 
 @app.route('/login')
 def login_page():
-    # Si déjà connecté, on redirige vers l'accueil
     if 'user_id' in session:
         return redirect(url_for('index'))
     return render_template('login.html')
@@ -95,12 +107,7 @@ def set_session():
         user_name = user_doc.to_dict().get('name', user_name)
         user_ref.update({'last_login': datetime.datetime.now()})
 
-    session.update({
-        'user_id': uid,
-        'name': user_name,
-        'photo': data.get('photo'),
-        'role': role
-    })
+    session.update({'user_id': uid, 'name': user_name, 'photo': data.get('photo'), 'role': role})
     return jsonify({"status": "ok", "role": role, "username": user_name})
 
 
@@ -134,7 +141,7 @@ def get_popup():
     return jsonify({"active": False})
 
 
-# --- ROUTES ADMINISTRATEUR (Toutes protégées) ---
+# --- ROUTES ADMINISTRATEUR ---
 
 @app.route('/admin/dashboard')
 @login_required
@@ -149,6 +156,22 @@ def admin_dashboard():
 
     stats = {"total_users": users_count, "total_products": products_count, "active_now": 1}
     return render_template('admin_dashboard.html', stats=stats, popup=popup_data)
+
+
+# Toggle Stock (Marquer comme Vendu/Disponible)
+@app.route('/admin/toggle_stock/<id>', methods=['POST'])
+@login_required
+def toggle_stock(id):
+    if session.get('role') != 'admin':
+        return jsonify({"status": "error"}), 403
+
+    product_ref = db.collection('products').document(id)
+    doc = product_ref.get()
+    if doc.exists:
+        current_status = doc.to_dict().get('in_stock', True)
+        product_ref.update({'in_stock': not current_status})
+        return jsonify({"status": "success", "new_status": not current_status})
+    return jsonify({"status": "error"}), 404
 
 
 @app.route('/admin/update_popup', methods=['POST'])
@@ -193,8 +216,10 @@ def publier():
                 'title': data.get('title'),
                 'price': data.get('price'),
                 'currency': data.get('currency'),
+                'category': data.get('category'),  # Ajout catégorie
                 'description': data.get('description'),
-                'images': [data.get('photo_url')],
+                'images': data.get('images'),  # Liste de photos (Multi-images)
+                'in_stock': True,  # Par défaut disponible
                 'author_name': session.get('name'),
                 'author_photo': session.get('photo'),
                 'is_admin_post': True,
@@ -202,7 +227,7 @@ def publier():
             })
             return jsonify({"status": "success"})
         except Exception as e:
-            print(f"ERREUR LORS DE LA PUBLICATION : {e}")
+            print(f"ERREUR PUBLICATION : {e}")
             return jsonify({"status": "error", "message": str(e)}), 500
     return render_template('publier.html')
 

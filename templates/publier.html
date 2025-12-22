@@ -2,65 +2,52 @@
 {% block content %}
 <div class="row g-4">
     <div class="col-lg-6">
-        <div class="glass-card p-4 p-md-5 bg-white shadow animate__animated animate__fadeInLeft" style="border-radius: 25px; border: 2px solid #FF6B00;">
+        <div class="glass-card p-4 bg-white shadow" style="border-radius: 25px; border: 2px solid #FF6B00;">
             <h2 class="fw-bold text-center mb-4" style="color: #FF6B00;">📦 Nouvelle Publication</h2>
-
             <form id="uploadForm">
                 <div class="mb-3">
                     <label class="fw-bold small">Nom de l'article</label>
-                    <input type="text" id="title" class="form-control rounded-pill border-orange shadow-sm" placeholder="Ex: Montre de luxe" required>
+                    <input type="text" id="title" class="form-control rounded-pill border-orange" required>
                 </div>
-
                 <div class="row">
                     <div class="col-7 mb-3">
                         <label class="fw-bold small">Prix</label>
-                        <input type="number" id="price" class="form-control rounded-pill border-orange shadow-sm" placeholder="0.00" required>
+                        <input type="number" id="price" class="form-control rounded-pill border-orange" required>
                     </div>
                     <div class="col-5 mb-3">
                         <label class="fw-bold small">Devise</label>
-                        <select id="currency" class="form-select rounded-pill border-orange shadow-sm">
+                        <select id="currency" class="form-select rounded-pill border-orange">
                             <option value="$">$ USD</option>
                             <option value="FC">FC CDF</option>
                         </select>
                     </div>
                 </div>
-
                 <div class="mb-3">
                     <label class="fw-bold small">Photos (Maximum 2) 📸</label>
-                    <input type="file" id="fileInput" class="form-control rounded-pill shadow-sm" accept="image/*" multiple required>
+                    <input type="file" id="fileInput" class="form-control rounded-pill" accept="image/*" multiple required>
                     <div id="thumbContainer" class="d-flex flex-wrap gap-2 mt-2"></div>
-                    <small id="fileHelp" class="text-muted">Vous pouvez choisir jusqu'à 2 photos.</small>
                 </div>
-
                 <div class="mb-3">
                     <label class="fw-bold small">Description 📝</label>
-                    <textarea id="description" class="form-control rounded-4 border-orange shadow-sm" rows="3" placeholder="Détails de l'article..."></textarea>
+                    <textarea id="description" class="form-control rounded-4 border-orange" rows="3"></textarea>
                 </div>
-
-                <button type="submit" id="btnSubmit" class="btn btn-orange w-100 py-3 shadow rounded-pill fw-bold">
-                    Lancer la vente ! 🚀
-                </button>
+                <button type="submit" id="btnSubmit" class="btn btn-orange w-100 py-3 rounded-pill fw-bold">Publier l'article 🚀</button>
             </form>
-
             <div id="loader" class="text-center mt-3 d-none">
                 <div class="spinner-border text-orange"></div>
-                <p class="text-orange mt-2 fw-bold">Compression et envoi... Patientez.</p>
+                <p class="text-orange mt-2 fw-bold">Traitement en cours...</p>
             </div>
         </div>
     </div>
 
-    <div class="col-lg-6 d-flex align-items-start justify-content-center">
-        <div class="sticky-lg-top" style="top: 100px; width: 100%; max-width: 350px;">
-            <h5 class="fw-bold text-muted text-center mb-3">Aperçu du catalogue ✨</h5>
-            <div class="product-card shadow-lg bg-white overflow-hidden" style="border-radius: 20px;">
-                <img id="previewImg" src="https://placehold.co/400x400?text=Offranel+Shop" alt="Aperçu" style="width: 100%; height: 250px; object-fit: cover;">
+    <div class="col-lg-6">
+        <div class="sticky-lg-top" style="top: 100px;">
+            <div class="product-card shadow-lg mx-auto" style="max-width:350px; border-radius:20px; overflow:hidden; background:#fff;">
+                <img id="previewImg" src="https://placehold.co/400x400?text=Aperçu" style="width:100%; height:250px; object-fit:cover;">
                 <div class="p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 id="previewTitle" class="fw-bold mb-0 text-dark">Nom du produit</h5>
-                        <span id="previewPrice" class="text-orange fw-bold">0 $</span>
-                    </div>
-                    <p id="previewDesc" class="text-muted small mb-3">La description apparaîtra ici...</p>
-                    <button class="btn btn-orange w-100 rounded-pill disabled" style="opacity: 0.6;">Acheter via WhatsApp</button>
+                    <h5 id="pTitle" class="fw-bold">Nom du produit</h5>
+                    <p id="pPrice" class="text-orange fw-bold">0 $</p>
+                    <p id="pDesc" class="text-muted small">Description...</p>
                 </div>
             </div>
         </div>
@@ -72,9 +59,9 @@ const fileInput = document.getElementById('fileInput');
 const thumbContainer = document.getElementById('thumbContainer');
 const previewImg = document.getElementById('previewImg');
 
-// --- FONCTION DE COMPRESSION ---
-const compressImage = (file) => {
-    return new Promise((resolve) => {
+// Compression Image Canvas
+const compress = (file) => {
+    return new Promise((res) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = (e) => {
@@ -82,95 +69,65 @@ const compressImage = (file) => {
             img.src = e.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 700;
-                let width = img.width;
-                let height = img.height;
-                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                canvas.width = width; canvas.height = height;
+                const MAX = 800;
+                let w = img.width, h = img.height;
+                if (w > MAX) { h *= MAX / w; w = MAX; }
+                canvas.width = w; canvas.height = h;
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                resolve(canvas.toDataURL('image/jpeg', 0.6)); // Qualité 60%
+                ctx.drawImage(img, 0, 0, w, h);
+                res(canvas.toDataURL('image/jpeg', 0.6));
             };
         };
     });
 };
 
-// --- GESTION DE LA SÉLECTION (LIMITE À 2) ---
 fileInput.addEventListener('change', async function() {
     if (this.files.length > 2) {
-        alert("Attention : Limite de 2 photos maximum par article.");
-        this.value = ""; // Réinitialise
-        thumbContainer.innerHTML = "";
-        return;
+        alert("Maximum 2 photos autorisées.");
+        this.value = ""; return;
     }
-
     thumbContainer.innerHTML = "";
-    const files = Array.from(this.files);
-
-    for (const [index, file] of files.entries()) {
-        const compressed = await compressImage(file);
-        if (index === 0) previewImg.src = compressed;
-
+    for (let i = 0; i < this.files.length; i++) {
+        const b64 = await compress(this.files[i]);
+        if (i === 0) previewImg.src = b64;
         const img = document.createElement('img');
-        img.src = compressed;
-        img.style = "width: 70px; height: 70px; object-fit: cover; border-radius: 10px; border: 2px solid #FF6B00;";
+        img.src = b64;
+        img.style = "width:60px; height:60px; object-fit:cover; border-radius:8px; border:2px solid #FF6B00";
         thumbContainer.appendChild(img);
     }
 });
 
-// --- ENVOI ---
 document.getElementById('uploadForm').onsubmit = async (e) => {
     e.preventDefault();
-    const btn = document.getElementById('btnSubmit');
-    const loader = document.getElementById('loader');
+    document.getElementById('btnSubmit').disabled = true;
+    document.getElementById('loader').classList.remove('d-none');
 
-    btn.disabled = true;
-    loader.classList.remove('d-none');
+    const imgs = [];
+    for (const f of fileInput.files) { imgs.push(await compress(f)); }
 
-    try {
-        const files = Array.from(fileInput.files);
-        const imagesBase64 = await Promise.all(files.map(f => compressImage(f)));
+    const res = await fetch('/publier', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            title: document.getElementById('title').value,
+            price: document.getElementById('price').value,
+            currency: document.getElementById('currency').value,
+            description: document.getElementById('description').value,
+            images: imgs
+        })
+    });
 
-        const response = await fetch('/publier', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                title: document.getElementById('title').value,
-                price: document.getElementById('price').value,
-                currency: document.getElementById('currency').value,
-                description: document.getElementById('description').value,
-                images: imagesBase64
-            })
-        });
-
-        if (response.ok) {
-            window.location.href = "/";
-        } else {
-            alert("Erreur Serveur. Essayez avec des images plus légères.");
-            btn.disabled = false;
-            loader.classList.add('d-none');
-        }
-    } catch (err) {
-        alert("Erreur de réseau.");
-        btn.disabled = false;
-        loader.classList.add('d-none');
-    }
+    if (res.ok) window.location.href = "/";
+    else { alert("Erreur lors de l'envoi"); document.getElementById('btnSubmit').disabled = false; }
 };
 
-// Mise à jour aperçu texte
+// Sync Aperçu
 ['title', 'price', 'currency', 'description'].forEach(id => {
     document.getElementById(id).addEventListener('input', () => {
-        document.getElementById('previewTitle').innerText = document.getElementById('title').value || "Produit";
-        document.getElementById('previewPrice').innerText = `${document.getElementById('price').value || '0'} ${document.getElementById('currency').value}`;
-        document.getElementById('previewDesc').innerText = document.getElementById('description').value || "La description...";
+        document.getElementById('pTitle').innerText = document.getElementById('title').value || "Produit";
+        document.getElementById('pPrice').innerText = `${document.getElementById('price').value || '0'} ${document.getElementById('currency').value}`;
+        document.getElementById('pDesc').innerText = document.getElementById('description').value || "Description...";
     });
 });
 </script>
-
-<style>
-    .border-orange { border: 1.5px solid #FF6B00 !important; }
-    .btn-orange { background-color: #FF6B00; color: white; border: none; }
-    .btn-orange:hover { background-color: #e66000; color: white; }
-    .text-orange { color: #FF6B00; }
-</style>
 {% endblock %}

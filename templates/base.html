@@ -162,5 +162,46 @@
             setTimeout(() => { banner.style.display = "none"; }, 600);
         }
     </script>
+<div class="modal fade" id="autoPopup" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px; border: none;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold text-orange" id="pTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4 text-center">
+                <p id="pContent" class="fs-5 text-muted"></p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-orange w-100 rounded-pill py-2 fw-bold" data-bs-dismiss="modal">OK, FERMER</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const popupKey = 'offranel_popup_expire';
+    const now = new Date().getTime();
+    const expireTime = localStorage.getItem(popupKey);
+
+    // Si pas de date enregistrée ou si le délai de 24h est dépassé
+    if (!expireTime || now > parseInt(expireTime)) {
+        const response = await fetch('/api/get_popup');
+        const data = await response.json();
+
+        if (data.active) {
+            document.getElementById('pTitle').innerText = data.title;
+            document.getElementById('pContent').innerText = data.content;
+
+            const myModal = new bootstrap.Modal(document.getElementById('autoPopup'));
+            myModal.show();
+
+            // Enregistrer l'expiration (Heure actuelle + 24 heures en millisecondes)
+            localStorage.setItem(popupKey, now + (24 * 60 * 60 * 1000));
+        }
+    }
+});
+</script>
 </body>
 </html>

@@ -39,6 +39,36 @@
         </div>
     </div>
 
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="glass-card p-4 shadow-sm border-0" style="border-left: 5px solid #FF6B00 !important;">
+                <h5 class="fw-bold mb-3"><i class="fas fa-bullhorn me-2 text-orange"></i>Configuration du Pop-up (Annonce)</h5>
+                <p class="small text-muted">Ce message s'affichera automatiquement aux clients une seule fois toutes les 24 heures.</p>
+
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label small fw-bold">Titre du Pop-up</label>
+                        <input type="text" id="adminPopTitle" class="form-control rounded-pill" value="{{ popup.title }}" placeholder="Ex: Promotion de Noël !">
+                    </div>
+                    <div class="col-md-7">
+                        <label class="form-label small fw-bold">Message / Contenu</label>
+                        <textarea id="adminPopContent" class="form-control rounded-4" rows="2" placeholder="Écrivez votre message ici...">{{ popup.content }}</textarea>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between mt-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="adminPopActive" {% if popup.active %}checked{% endif %}>
+                        <label class="form-check-label fw-bold small" for="adminPopActive">Activer l'affichage</label>
+                    </div>
+                    <button onclick="savePopup()" class="btn btn-orange rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="fas fa-save me-2"></i>Mettre à jour l'annonce
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-lg-8 mb-4">
             <div class="glass-card p-4 shadow-sm">
@@ -56,8 +86,11 @@
                     <a href="/publier" class="btn btn-orange w-100">
                         <i class="fas fa-plus me-2"></i>Nouveau Produit
                     </a>
+                    <a href="/admin/modifier-a-propos" class="btn btn-outline-orange w-100">
+                        <i class="fas fa-edit me-2"></i>Editer "Qui sommes-nous"
+                    </a>
                     <button onclick="location.reload()" class="btn btn-outline-dark w-100">
-                        <i class="fas fa-sync me-2"></i>Actualiser
+                        <i class="fas fa-sync me-2"></i>Actualiser les stats
                     </button>
                 </div>
             </div>
@@ -67,6 +100,32 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    // FONCTION POUR SAUVEGARDER LE POPUP
+    async function savePopup() {
+        const data = {
+            title: document.getElementById('adminPopTitle').value,
+            content: document.getElementById('adminPopContent').value,
+            active: document.getElementById('adminPopActive').checked
+        };
+
+        try {
+            const res = await fetch('/admin/update_popup', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            if (res.ok) {
+                alert("📢 Annonce enregistrée avec succès !");
+            } else {
+                alert("Erreur lors de l'enregistrement.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Erreur de connexion au serveur.");
+        }
+    }
+
+    // GRAPHIQUE
     document.addEventListener('DOMContentLoaded', function() {
         const ctx = document.getElementById('offranelChart').getContext('2d');
         new Chart(ctx, {
@@ -98,5 +157,10 @@
         border-radius: 20px;
         border: 1px solid rgba(0,0,0,0.05);
     }
+    .btn-orange { background-color: #FF6B00; color: white; border-radius: 50px; }
+    .btn-orange:hover { background-color: #e66000; color: white; }
+    .btn-outline-orange { border: 1px solid #FF6B00; color: #FF6B00; border-radius: 50px; }
+    .btn-outline-orange:hover { background-color: #FF6B00; color: white; }
+    .text-orange { color: #FF6B00; }
 </style>
 {% endblock %}

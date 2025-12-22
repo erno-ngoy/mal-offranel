@@ -10,18 +10,15 @@ app = Flask(__name__)
 
 # --- CONFIGURATION SÉCURITÉ ET SESSION ---
 app.secret_key = "offranel_orange_secret"
-# Garde l'utilisateur connecté pendant 30 jours (indispensable pour mobile)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
-# --- INITIALISATION FIREBASE (RAILWAY + LOCAL) ---
+# --- INITIALISATION FIREBASE ---
 if not firebase_admin._apps:
     service_account_info = os.environ.get('FIREBASE_CONFIG')
     if service_account_info:
-        # Configuration Railway (Variable d'environnement)
         cred_dict = json.loads(service_account_info)
         cred = credentials.Certificate(cred_dict)
     else:
-        # Configuration Local (Fichier JSON)
         cred = credentials.Certificate("serviceAccountKey.json")
     firebase_admin.initialize_app(cred)
 
@@ -33,7 +30,6 @@ db = firestore.client()
 @app.route('/')
 def index():
     try:
-        # Récupération des articles triés par date (les plus récents en premier)
         products_stream = db.collection('products').order_by('created_at', direction='DESCENDING').stream()
         products = []
         for doc in products_stream:
@@ -67,14 +63,10 @@ def profile(uid=None):
 def set_session():
     data = request.get_json()
     uid = data.get('uid')
-
-    # Activation de la session longue durée
     session.permanent = True
-
     user_ref = db.collection('users').document(uid)
     user_doc = user_ref.get()
 
-    # Déterminer le rôle (Admin ou User)
     if not user_doc.exists:
         role = 'user'
         user_ref.set({
@@ -88,12 +80,7 @@ def set_session():
         role = user_doc.to_dict().get('role', 'user')
         user_ref.update({'last_login': datetime.datetime.now()})
 
-    session.update({
-        'user_id': uid,
-        'name': data.get('name'),
-        'photo': data.get('photo'),
-        'role': role
-    })
+    session.update({'user_id': uid, 'name': data.get('name'), 'photo': data.get('photo'), 'role': role})
     return jsonify({"status": "ok", "role": role})
 
 
@@ -112,73 +99,86 @@ def panier():
 
 @app.route('/a-propos')
 def a_propos():
-    return render_template('a_propos.html')
+    about_doc = db.collection('settings').document('about_us').get()
+    content = about_doc.to_dict() if about_doc.exists else {"text": "Bienvenue sur Offranel Shop !"}
+    return render_template('a_propos.html', content=content)
 
 
-# --- ROUTES ADMINISTRATEUR (SÉCURISÉES) ---
+# API pour que le JavaScript récupère le message du pop-up
+@app.route('/api/get_popup')
+def get_popup():
+    doc = db.collection('settings').document('popup_message').get()
+    if doc.exists:
+        return jsonify(doc.to_dict())
+    return jsonify({"active": False})
+
+
+# --- ROUTES ADMINISTRATEUR ---
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
     if session.get('role') != 'admin':
         return redirect(url_for('index'))
 
-    # Statistiques pour le graphique et les cartes
     users_count = len(list(db.collection('users').stream()))
     products_count = len(list(db.collection('products').stream()))
 
-    stats = {
-        "total_users": users_count,
-        "total_products": products_count,
-        "active_now": 1  # Simulation d'activité
-    }
-    return render_template('admin_dashboard.html', stats=stats)
+    # Récupération de la config actuelle du popup
+    pop_doc = db.collection('settings').document('popup_message').get()
+    popup_data = pop_doc.to_dict() if pop_doc.exists else {"title": "", "content": "", "active": False}
+
+    stats = {"total_users": users_count, "total_products": products_count, "active_now": 1}
+    return render_template('admin_dashboard.html', stats=stats, popup=popup_data)
+
+
+@app.route('/admin/update_popup', methods=['POST'])
+def update_popup():
+    if session.get('role') != 'admin':
+        return jsonify({"status": "error"}), 403
+    data = request.get_json()
+    db.collection('settings').document('popup_message').set({
+        'title': data.get('title'),
+        'content': data.get('content'),
+        'active': data.get('active'),
+        'updated_at': datetime.datetime.now()
+    })
+    return jsonify({"status": "success"})
+
+
+@app.route('/admin/modifier-a-propos', methods=['GET', 'POST'])
+def edit_about():
+    if session.get('role') != 'admin':
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        new_text = request.form.get('about_text')
+        db.collection('settings').document('about_us').set({"text": new_text})
+        flash("Page 'À propos' mise à jour !", "success")
+        return redirect(url_for('a_propos'))
+    about_doc = db.collection('settings').document('about_us').get()
+    current_text = about_doc.to_dict().get('text', '') if about_doc.exists else ""
+    return render_template('edit_about.html', current_text=current_text)
 
 
 @app.route('/publier', methods=['GET', 'POST'])
 def publier():
     if session.get('role') != 'admin':
         return redirect(url_for('index'))
-
     if request.method == 'POST':
         try:
             data = request.get_json()
-
-            # Utilisation de photo_url comme tu l'as défini
-            photo_url = data.get('photo_url')
-
             db.collection('products').add({
                 'title': data.get('title'),
                 'price': data.get('price'),
                 'currency': data.get('currency'),
                 'description': data.get('description'),
-                'images': [photo_url],  # On garde ta structure de liste
+                'images': [data.get('photo_url')],
                 'created_at': datetime.datetime.now()
             })
             return jsonify({"status": "success"})
         except Exception as e:
-            # Affiche l'erreur dans la console pour débugger
             print(f"ERREUR LORS DE LA PUBLICATION : {e}")
             return jsonify({"status": "error", "message": str(e)}), 500
-
     return render_template('publier.html')
-
-
-@app.route('/api/publier_multiple', methods=['POST'])
-def api_publier_multiple():
-    if session.get('role') != 'admin':
-        return jsonify({"status": "error"}), 403
-
-    data = request.get_json()
-    produits = data.get('produits', [])
-    batch = db.batch()
-
-    for p in produits:
-        doc_ref = db.collection('products').document()
-        p['created_at'] = datetime.datetime.now()
-        batch.set(doc_ref, p)
-
-    batch.commit()
-    return jsonify({"status": "success"})
 
 
 @app.route('/supprimer/<id>', methods=['POST'])
@@ -195,8 +195,6 @@ def logout():
     return redirect(url_for('index'))
 
 
-# --- LANCEMENT SERVEUR ---
 if __name__ == '__main__':
-    # Indispensable pour Railway
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)

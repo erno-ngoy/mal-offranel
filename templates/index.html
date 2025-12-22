@@ -1,26 +1,82 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="row">
-    {% for product in products %}
-    <div class="col-md-3 mb-4">
-        <div class="card h-100 shadow-sm border-0" style="border-radius: 20px; overflow: hidden;">
-            <img src="{{ product.images[0] }}" class="card-img-top" style="height: 200px; object-fit: cover;">
-            <div class="card-body">
-                <h6 class="fw-bold">{{ product.title }}</h6>
-                <p class="text-orange fw-bold">{{ product.price }} {{ product.currency }}</p>
 
-                <div class="d-flex justify-content-between align-items-center">
-                    <a href="/produit/{{ product.id }}" class="btn btn-sm btn-light rounded-pill px-3">Détails</a>
+<div class="text-center py-4 animate__animated animate__fadeIn">
+    <h1 class="fw-bold" style="color: #FF6B00;">Offranel Shop</h1>
+    <p class="text-muted">Découvrez nos meilleurs articles au meilleur prix.</p>
+</div>
+
+<div class="row g-4 mt-2">
+    {% for product in products %}
+    <div class="col-6 col-md-4 col-lg-3 animate__animated animate__zoomIn">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius: 20px; transition: transform 0.3s;">
+
+            <a href="{{ url_for('detail_produit', id=product.id) }}" class="text-decoration-none">
+                {% if product.images and product.images is iterable and product.images|length > 0 %}
+                    <img src="{{ product.images[0] }}" class="card-img-top" alt="{{ product.title }}"
+                         style="height: 200px; object-fit: cover; border-radius: 20px 20px 0 0;">
+                {% elif product.photo_url %}
+                    <img src="{{ product.photo_url }}" class="card-img-top" alt="{{ product.title }}"
+                         style="height: 200px; object-fit: cover; border-radius: 20px 20px 0 0;">
+                {% else %}
+                    <img src="https://placehold.co/400x400?text=Aucune+Image" class="card-img-top"
+                         style="height: 200px; object-fit: cover; border-radius: 20px 20px 0 0;">
+                {% endif %}
+            </a>
+
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                    <h6 class="fw-bold text-dark mb-0 text-truncate" style="max-width: 80%;">{{ product.title }}</h6>
+                </div>
+                <p class="text-orange fw-bold mb-2">{{ product.price }} {{ product.currency }}</p>
+
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('detail_produit', id=product.id) }}" class="btn btn-outline-orange btn-sm rounded-pill">Détails</a>
 
                     {% if session.get('role') == 'admin' %}
-                    <form action="/supprimer/{{ product.id }}" method="POST" onsubmit="return confirm('Supprimer cet article ?');">
-                        <button type="submit" class="btn btn-sm btn-outline-danger border-0">🗑️</button>
+                    <form action="{{ url_for('supprimer', id=product.id) }}" method="POST" onsubmit="return confirm('Supprimer cet article ?');">
+                        <button type="submit" class="btn btn-light btn-sm w-100 text-danger rounded-pill">Supprimer</button>
                     </form>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
+    {% else %}
+    <div class="text-center py-5">
+        <h3 class="text-muted">Aucun article pour le moment. 📦</h3>
+        {% if session.get('role') == 'admin' %}
+            <a href="{{ url_for('publier') }}" class="btn btn-orange mt-3 rounded-pill">Ajouter un produit</a>
+        {% endif %}
+    </div>
     {% endfor %}
 </div>
+
+<style>
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    .btn-orange {
+        background-color: #FF6B00;
+        color: white;
+        border: none;
+    }
+    .btn-orange:hover {
+        background-color: #e66000;
+        color: white;
+    }
+    .btn-outline-orange {
+        color: #FF6B00;
+        border: 1px solid #FF6B00;
+    }
+    .btn-outline-orange:hover {
+        background-color: #FF6B00;
+        color: white;
+    }
+    .text-orange {
+        color: #FF6B00;
+    }
+</style>
+
 {% endblock %}

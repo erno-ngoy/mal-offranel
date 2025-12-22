@@ -1,51 +1,65 @@
 {% extends 'base.html' %}
+
 {% block content %}
 <div class="container animate__animated animate__fadeIn">
-    <h2 class="fw-bold mb-4">Tableau de Bord Admin 📊</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">Stats Offranel 🍊</h2>
+        <span class="badge bg-success rounded-pill px-3 py-2">En direct</span>
+    </div>
 
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-4">
-            <div class="glass-card text-center p-3">
-                <i class="fas fa-users text-orange fa-2x mb-2"></i>
-                <h3 class="fw-bold">{{ stats.total_users }}</h3>
-                <p class="text-muted small">Utilisateurs</p>
+            <div class="glass-card text-center p-3 h-100 shadow-sm">
+                <div class="bg-orange-light rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                    <i class="fas fa-users text-orange fa-lg"></i>
+                </div>
+                <h3 class="fw-bold mb-0">{{ stats.total_users }}</h3>
+                <p class="text-muted small mb-0">Utilisateurs</p>
             </div>
         </div>
+
         <div class="col-6 col-md-4">
-            <div class="glass-card text-center p-3">
-                <i class="fas fa-box-open text-orange fa-2x mb-2"></i>
-                <h3 class="fw-bold">{{ stats.total_products }}</h3>
-                <p class="text-muted small">Publications</p>
+            <div class="glass-card text-center p-3 h-100 shadow-sm">
+                <div class="bg-dark-light rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background: #f0f0f0;">
+                    <i class="fas fa-box-open text-dark fa-lg"></i>
+                </div>
+                <h3 class="fw-bold mb-0">{{ stats.total_products }}</h3>
+                <p class="text-muted small mb-0">Articles</p>
             </div>
         </div>
+
         <div class="col-12 col-md-4">
-            <div class="glass-card text-center p-3">
-                <i class="fas fa-bolt text-success fa-2x mb-2"></i>
-                <h3 class="fw-bold">{{ stats.active_now }}</h3>
-                <p class="text-muted small">En ligne (Simulé)</p>
+            <div class="glass-card text-center p-3 h-100 shadow-sm d-flex flex-column justify-content-center">
+                <div class="d-flex align-items-center justify-content-center">
+                    <span class="spinner-grow spinner-grow-sm text-success me-2"></span>
+                    <h3 class="fw-bold mb-0">{{ stats.active_now }}</h3>
+                </div>
+                <p class="text-muted small mb-0">Actif en ce moment</p>
             </div>
         </div>
     </div>
 
     <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="glass-card p-4">
-                <h5 class="fw-bold mb-3">Répartition Offranel</h5>
-                <canvas id="statsChart"></canvas>
+        <div class="col-lg-8 mb-4">
+            <div class="glass-card p-4 shadow-sm">
+                <h5 class="fw-bold mb-4"><i class="fas fa-chart-pie me-2 text-orange"></i>Répartition du Stock</h5>
+                <div style="max-height: 300px; position: relative;">
+                    <canvas id="offranelChart"></canvas>
+                </div>
             </div>
         </div>
-        
-        <div class="col-md-6">
-            <div class="glass-card p-4">
-                <h5 class="fw-bold mb-3">Dernières Actions</h5>
-                <ul class="list-group list-group-flush bg-transparent">
-                    <li class="list-group-item bg-transparent border-0 px-0">
-                        <i class="fas fa-check-circle text-success me-2"></i> Base de données connectée
-                    </li>
-                    <li class="list-group-item bg-transparent border-0 px-0">
-                        <i class="fas fa-info-circle text-orange me-2"></i> Mise à jour automatique activée
-                    </li>
-                </ul>
+
+        <div class="col-lg-4">
+            <div class="glass-card p-4 shadow-sm h-100">
+                <h5 class="fw-bold mb-3">Actions Admin</h5>
+                <div class="d-grid gap-2">
+                    <a href="/publier" class="btn btn-orange w-100">
+                        <i class="fas fa-plus me-2"></i>Nouveau Produit
+                    </a>
+                    <button onclick="location.reload()" class="btn btn-outline-dark w-100">
+                        <i class="fas fa-sync me-2"></i>Actualiser
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -53,23 +67,36 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const ctx = document.getElementById('statsChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Utilisateurs', 'Publications'],
-            datasets: [{
-                data: [{{ stats.total_users }}, {{ stats.total_products }}],
-                backgroundColor: ['#FF6B00', '#1A1A1A'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'bottom' }
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('offranelChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Utilisateurs', 'Produits'],
+                datasets: [{
+                    data: [{{ stats.total_users }}, {{ stats.total_products }}],
+                    backgroundColor: ['#FF6B00', '#1A1A1A'],
+                    hoverOffset: 4,
+                    borderRadius: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
             }
-        }
+        });
     });
 </script>
+
+<style>
+    .bg-orange-light { background-color: rgba(255, 107, 0, 0.1); }
+    .glass-card {
+        background: white;
+        border-radius: 20px;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+</style>
 {% endblock %}

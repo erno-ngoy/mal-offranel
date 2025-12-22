@@ -16,79 +16,57 @@
         :root {
             --offranel-orange: #FF6B00;
             --offranel-dark: #1A1A1A;
+            --glass-bg: rgba(255, 255, 255, 0.9);
         }
 
         body {
             background-color: #f8f9fa;
             font-family: 'Poppins', sans-serif;
-            overflow-x: hidden; /* Empêche le glissement horizontal */
+            overflow-x: hidden;
         }
 
         .text-orange { color: var(--offranel-orange) !important; }
         .bg-orange { background-color: var(--offranel-orange) !important; }
 
-        /* --- NAVBAR OPTIMISÉE --- */
-        .navbar {
-            padding: 10px 0;
-        }
-        .navbar-brand { font-size: 1.4rem; }
+        /* --- NAVBAR --- */
+        .navbar { padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .navbar-brand { font-size: 1.4rem; letter-spacing: 1px; }
 
-        /* --- GRILLE DE PRODUITS MOBILE-FIRST --- */
-        /* Par défaut : 2 colonnes sur smartphone */
-        .product-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            padding: 5px;
-        }
-
-        /* Sur Tablettes (plus de 768px) : 3 colonnes */
-        @media (min-width: 768px) {
-            .product-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; }
-        }
-
-        /* Sur PC (plus de 1024px) : 4 colonnes */
-        @media (min-width: 1024px) {
-            .product-grid { grid-template-columns: repeat(4, 1fr); }
-        }
-
-        /* --- CARTES PRODUITS --- */
-        .product-card {
-            border: none;
-            border-radius: 15px;
-            background: white;
-            transition: transform 0.3s;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-
-        .product-card img {
-            width: 100%;
-            height: 150px; /* Hauteur fixe pour mobile */
-            object-fit: cover;
-        }
-
-        @media (min-width: 768px) {
-            .product-card img { height: 200px; }
-        }
-
-        /* --- BOUTONS TACTILES --- */
+        /* --- BOUTONS --- */
         .btn-orange {
             background-color: var(--offranel-orange);
             color: white;
             border-radius: 50px;
             font-weight: 600;
-            padding: 12px 20px; /* Zone de clic plus grande */
-            display: inline-block;
-            text-decoration: none;
+            padding: 10px 24px;
+            border: none;
             transition: 0.3s;
         }
+        .btn-orange:hover { background-color: #e66000; color: white; transform: translateY(-2px); }
 
-        /* Adaptation des textes selon l'écran */
+        /* --- COOKIE BANNER DESIGN --- */
+        .cookie-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: none;
+        }
+        .glass-cookie {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 107, 0, 0.2);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+
+        /* --- RESPONSIVE ADJUSTMENTS --- */
         @media (max-width: 576px) {
-            .container { padding-left: 15px; padding-right: 15px; }
-            h1 { font-size: 1.8rem; }
-            .product-title { font-size: 0.9rem; }
+            .navbar-brand { font-size: 1.2rem; }
+            .container { padding-left: 20px; padding-right: 20px; }
         }
     </style>
 </head>
@@ -111,23 +89,34 @@
                     {% if session.get('user_id') %}
                         {% if session.get('role') == 'admin' %}
                             <a class="btn btn-orange btn-sm mx-lg-2 my-2 my-lg-0" href="/publier">
-                                <i class="fas fa-plus-circle"></i> Publier
+                                <i class="fas fa-plus-circle me-1"></i> Publier
                             </a>
                         {% endif %}
 
                         <div class="dropdown mt-2 mt-lg-0">
                             <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" data-bs-toggle="dropdown">
-                                <img src="{{ session.get('photo') }}" class="rounded-circle border border-warning" width="35" height="35">
-                                <span class="d-lg-none ms-2">Mon Profil</span>
+                                <img src="{{ session.get('photo') }}" class="rounded-circle border border-warning shadow-sm" width="38" height="38">
+                                <span class="d-lg-none ms-2">Mon Compte</span>
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end border-0 shadow rounded-4">
-                                <li><a class="dropdown-item" href="/profile/{{ session.get('user_id') }}">✨ Mon Profil</a></li>
+                            <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 p-2 animate__animated animate__fadeIn">
+                                {% if session.get('role') == 'admin' %}
+                                    <li><a class="dropdown-item fw-bold text-orange" href="/admin/dashboard">
+                                        <i class="fas fa-chart-line me-2"></i>Dashboard Admin
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                {% endif %}
+
+                                <li><a class="dropdown-item" href="/profile/{{ session.get('user_id') }}">
+                                    <i class="fas fa-user-circle me-2"></i>Mon Profil
+                                </a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="/logout">🚪 Déconnexion</a></li>
+                                <li><a class="dropdown-item text-danger" href="/logout">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
+                                </a></li>
                             </ul>
                         </div>
                     {% else %}
-                        <a class="btn btn-orange px-4 w-100 w-lg-auto mt-3 mt-lg-0" href="/login">Connexion ⚡</a>
+                        <a class="btn btn-orange px-4 w-100 w-lg-auto mt-3 mt-lg-0 shadow-sm" href="/login">Connexion ⚡</a>
                     {% endif %}
                 </div>
             </div>
@@ -138,61 +127,40 @@
         {% block content %}{% endblock %}
     </div>
 
-
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<style>
-    .cookie-banner {
-        position: fixed;
-        bottom: 20px;
-        left: 20px;
-        right: 20px;
-        z-index: 9999;
-        display: none; /* Caché par défaut */
-    }
-    .glass-cookie {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 107, 0, 0.2);
-        border-radius: 20px;
-        padding: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    }
-</style>
-
-<div id="cookieBanner" class="cookie-banner animate__animated animate__fadeInUp">
-    <div class="container">
-        <div class="glass-cookie d-flex flex-column flex-md-row align-items-center justify-content-between text-center text-md-start">
-            <div class="mb-3 mb-md-0">
-                <h5 class="fw-bold text-orange mb-1">Expérience personnalisée 🍊</h5>
-                <p class="small mb-0 text-muted">
-                    Nous utilisons des cookies pour vous garder connecté et améliorer votre shopping sur Offranel.
-                </p>
-            </div>
-            <div>
-                <button onclick="acceptCookies()" class="btn btn-orange px-4 shadow-sm">J'ai compris !</button>
+    <div id="cookieBanner" class="cookie-banner animate__animated animate__fadeInUp">
+        <div class="container">
+            <div class="glass-cookie d-flex flex-column flex-md-row align-items-center justify-content-between text-center text-md-start">
+                <div class="mb-3 mb-md-0">
+                    <h5 class="fw-bold text-orange mb-1">Restez connecté ! 🍊</h5>
+                    <p class="small mb-0 text-muted">
+                        Nous utilisons des cookies pour maintenir votre session active pendant 30 jours et optimiser votre expérience.
+                    </p>
+                </div>
+                <div>
+                    <button onclick="acceptCookies()" class="btn btn-orange px-5 shadow-sm">Accepter</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Si l'utilisateur n'a pas encore accepté, on montre le bandeau
-        if (!localStorage.getItem("offranel_cookies")) {
-            setTimeout(() => {
-                document.getElementById("cookieBanner").style.display = "block";
-            }, 2000); // Apparaît après 2 secondes
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Gestion de l'affichage du bandeau de cookies
+        document.addEventListener("DOMContentLoaded", function() {
+            if (!localStorage.getItem("offranel_cookies_accepted")) {
+                setTimeout(() => {
+                    document.getElementById("cookieBanner").style.display = "block";
+                }, 1500);
+            }
+        });
+
+        function acceptCookies() {
+            localStorage.setItem("offranel_cookies_accepted", "true");
+            let banner = document.getElementById("cookieBanner");
+            banner.classList.replace("animate__fadeInUp", "animate__fadeOutDown");
+            setTimeout(() => { banner.style.display = "none"; }, 600);
         }
-    });
-
-    function acceptCookies() {
-        localStorage.setItem("offranel_cookies", "true");
-        document.getElementById("cookieBanner").classList.replace("animate__fadeInUp", "animate__fadeOutDown");
-        setTimeout(() => {
-            document.getElementById("cookieBanner").style.display = "none";
-        }, 500);
-    }
-</script>
+    </script>
 </body>
 </html>

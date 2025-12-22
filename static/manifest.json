@@ -1,19 +1,19 @@
 {
-  "name": "OFFRANEL",
+  "name": "OFFRANEL Luxury Shop",
   "short_name": "OFFRANEL",
-  "description": "Boutique en ligne",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#FF6B00",
   "icons": [
     {
-      "src": "/static/img/icon-192.png",
+      "src": "/static/img/images.png",
       "sizes": "192x192",
-      "type": "images/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "/static/img/icon-512.png",
+      "src": "/static/img/image.png",
       "sizes": "512x512",
       "type": "image/png"
     }

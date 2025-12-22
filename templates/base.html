@@ -9,6 +9,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="icon" type="image/png" href="/static/img/image.png">
+    <link rel="apple-touch-icon" href="/static/img/images.png">
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
@@ -155,6 +157,21 @@
     </style>
 </head>
 <body>
+<div id="pwa-install-banner" class="bg-dark text-white p-3 shadow-lg animate__animated animate__fadeInDown" style="display: none; position: fixed; top: 0; width: 100%; z-index: 100000; border-bottom: 3px solid var(--offranel-orange);">
+    <div class="container d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center">
+            <img src="/static/img/icon-192.png" width="40" class="rounded-3 me-3">
+            <div>
+                <p class="mb-0 fw-bold small">Installer OFFRANEL</p>
+                <p class="mb-0 tiny text-muted" style="font-size: 0.7rem;">Accès rapide depuis votre écran d'accueil</p>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button id="btn-install-pwa" class="btn btn-orange btn-sm rounded-pill fw-bold">Installer</button>
+            <button onclick="document.getElementById('pwa-install-banner').style.display='none'" class="btn btn-sm text-white"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+</div>
 
     <div id="fb-loader-wrapper">
         <div class="loader-brand-icon">
@@ -345,5 +362,38 @@
             }
         });
     </script>
+<script>
+    let deferredPrompt;
+    const installBanner = document.getElementById('pwa-install-banner');
+    const installBtn = document.getElementById('btn-install-pwa');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Empêche Chrome d'afficher sa propre bannière par défaut
+        e.preventDefault();
+        // Garde l'événement en mémoire pour le déclencher plus tard
+        deferredPrompt = e;
+        // Affiche notre bannière personnalisée
+        installBanner.style.display = 'block';
+    });
+
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            // Affiche la fenêtre d'installation native
+            deferredPrompt.prompt();
+            // Attend la réponse de l'utilisateur
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`L'utilisateur a ${outcome} l'installation`);
+            // On cache la bannière
+            deferredPrompt = null;
+            installBanner.style.display = 'none';
+        }
+    });
+
+    // Cacher la bannière si l'app est déjà installée
+    window.addEventListener('appinstalled', () => {
+        installBanner.style.display = 'none';
+        console.log('OFFRANEL a été installée avec succès !');
+    });
+</script>
 </body>
 </html>

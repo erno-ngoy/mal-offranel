@@ -1,64 +1,133 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container animate__animated animate__fadeInUp">
-    <h2 class="fw-bold mb-4 text-orange">Mon Panier 🛒</h2>
-    <div id="panier-items"></div>
-    
-    <div id="cart-footer" class="glass-card p-4 mt-4 shadow-sm" style="display: none;">
-        <div class="d-flex justify-content-between mb-3">
-            <span class="h5">Total Estimé :</span>
-            <span class="h5 fw-bold text-orange" id="cart-total">0 $</span>
+<div class="container animate__animated animate__fadeIn">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold" style="color: #FF6B00;">Mon Panier 🛒</h2>
+        <p class="text-muted">Finalisez votre commande chez Offranel</p>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div id="cart-list" class="mb-4">
+                </div>
         </div>
-        <button onclick="envoyerWhatsApp()" class="btn btn-success w-100 rounded-pill py-3 fw-bold">
-            <i class="fab fa-whatsapp me-2"></i> Commander sur WhatsApp
-        </button>
+
+        <div class="col-lg-4">
+            <div class="card p-4 shadow-sm border-0" style="border-radius: 20px; border: 1px solid rgba(255,107,0,0.2);">
+                <h5 class="fw-bold mb-4">Résumé</h5>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted">Nombre d'articles</span>
+                    <span id="cart-count-summary" class="fw-bold">0</span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between mb-4">
+                    <span class="fw-bold">Total Estimé</span>
+                    <h4 class="fw-bold text-orange" id="total-price">0 $</h4>
+                </div>
+                <button onclick="checkout()" class="btn btn-orange w-100 py-3 fw-bold rounded-pill shadow-sm">
+                    <i class="fab fa-whatsapp me-2"></i>COMMANDER VIA WHATSAPP
+                </button>
+                <a href="/" class="btn btn-link w-100 text-muted mt-3 text-decoration-none small">
+                    <i class="fas fa-arrow-left me-1"></i> Continuer mes achats
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    function loadCart() {
-        let cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
-        let container = document.getElementById('panier-items');
+    // Utilisation de la même clé que dans index.html
+    const CART_KEY = 'offranel_cart';
+
+    function renderCart() {
+        const cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
+        const list = document.getElementById('cart-list');
+        const totalPriceEl = document.getElementById('total-price');
+        const countEl = document.getElementById('cart-count-summary');
+
         let total = 0;
-        
+        let currency = "$"; // Par défaut
+
         if (cart.length === 0) {
-            container.innerHTML = '<div class="text-center py-5"><h5>Votre panier est vide 🍊</h5><a href="/" class="btn btn-orange mt-3">Voir les produits</a></div>';
-            document.getElementById('cart-footer').style.display = 'none';
+            list.innerHTML = `
+                <div class="text-center py-5 bg-white shadow-sm" style="border-radius: 20px;">
+                    <i class="fas fa-shopping-basket fa-3x text-light mb-3"></i>
+                    <h4 class="text-muted">Le panier est vide 😕</h4>
+                    <p class="small text-muted">Parcourez nos articles pour commencer vos achats.</p>
+                </div>`;
+            totalPriceEl.innerText = "0 $";
+            countEl.innerText = "0";
             return;
         }
 
-        document.getElementById('cart-footer').style.display = 'block';
-        container.innerHTML = cart.map((item, index) => {
+        list.innerHTML = cart.map((item, index) => {
             total += parseFloat(item.price);
+            currency = item.currency; // Utilise la devise du dernier item ajouté
             return `
-                <div class="glass-card p-3 mb-2 d-flex align-items-center animate__animated animate__fadeInLeft">
-                    <img src="${item.image}" class="rounded" width="70" height="70" style="object-fit:cover;">
-                    <div class="ms-3 flex-grow-1">
-                        <h6 class="fw-bold mb-0">${item.title}</h6>
-                        <small class="text-orange">${item.price} ${item.currency}</small>
+                <div class="card mb-3 p-3 border-0 shadow-sm rounded-4 animate__animated animate__fadeInUp" style="transition: 0.3s;">
+                    <div class="d-flex align-items-center">
+                        <img src="${item.image}" width="90" height="90" class="rounded-3 me-3" style="object-fit: cover; border: 1px solid #eee;">
+                        <div class="flex-grow-1">
+                            <h6 class="fw-bold mb-1 text-dark">${item.title}</h6>
+                            <div class="d-flex align-items-center">
+                                <span class="text-orange fw-bold fs-5">${item.price} ${item.currency}</span>
+                            </div>
+                        </div>
+                        <button onclick="removeItem(${index})" class="btn btn-light btn-sm text-danger rounded-circle p-2" title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
-                    <button onclick="removeItem(${index})" class="btn btn-link text-danger"><i class="fas fa-trash"></i></button>
-                </div>`;
+                </div>
+            `;
         }).join('');
-        document.getElementById('cart-total').innerText = total + " $";
+
+        totalPriceEl.innerText = `${total} ${currency}`;
+        countEl.innerText = cart.length;
     }
 
     function removeItem(index) {
-        let cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
+        let cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
         cart.splice(index, 1);
-        localStorage.setItem('offranel_cart', JSON.stringify(cart));
-        loadCart();
+        localStorage.setItem(CART_KEY, JSON.stringify(cart));
+        renderCart();
+
+        // Mettre à jour le badge global dans base.html
+        if (typeof updateCartBadge === "function") {
+            updateCartBadge();
+        }
     }
 
-    function envoyerWhatsApp() {
-        let cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
-        let num = "243XXXXXXXXX"; // Ton numéro ici
-        let msg = "Bonjour Offranel 🍊, je souhaite commander :\n\n";
-        cart.forEach(i => msg += `• ${i.title} (${i.price} ${i.currency})\n`);
-        msg += `\n*TOTAL : ${document.getElementById('cart-total').innerText}*`;
-        window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`);
+    function checkout() {
+        const cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
+        if (cart.length === 0) return alert("Votre panier est vide !");
+
+        let message = "Bonjour Offranel Shop ! 🍊\nJe souhaite commander les articles suivants :\n\n";
+        let total = 0;
+        let currency = "";
+
+        cart.forEach((item, i) => {
+            message += `${i+1}. *${item.title}* - ${item.price} ${item.currency}\n`;
+            total += parseFloat(item.price);
+            currency = item.currency;
+        });
+
+        message += `\n*Total : ${total} ${currency}*`;
+        message += `\n\nClient : {{ session.get('name') }}`;
+
+        const encodedMessage = encodeURIComponent(message);
+        // Remplacez le numéro ci-dessous par votre numéro WhatsApp réel
+        const whatsappNumber = "243828035654";
+        window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
     }
 
-    document.addEventListener('DOMContentLoaded', loadCart);
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', renderCart);
 </script>
+
+<style>
+    .text-orange { color: #FF6B00 !important; }
+    .btn-orange { background: #FF6B00; color: white; border: none; }
+    .btn-orange:hover { background: #e66000; color: white; }
+    .card:hover { transform: scale(1.01); }
+</style>
 {% endblock %}

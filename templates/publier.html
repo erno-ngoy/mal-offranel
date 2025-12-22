@@ -51,14 +51,29 @@
         <div class="sticky-top" style="top: 100px;">
             <h5 class="text-center text-muted small fw-bold mb-3">APERÇU DU CLIENT ✨</h5>
             <div class="product-card shadow-lg mx-auto bg-white" style="max-width: 320px; border-radius: 15px; overflow: hidden;">
+
+                <div class="p-3 d-flex align-items-center border-bottom">
+                    <img src="{{ session.get('photo') }}" class="rounded-circle me-2 border border-orange" width="40" height="40" style="object-fit: cover;">
+                    <div>
+                        <div class="d-flex align-items-center">
+                            <span class="fw-bold small me-1">{{ session.get('name') }}</span>
+                            <i class="fas fa-check-circle text-primary" style="font-size: 0.85rem;" title="Compte Certifié"></i>
+                        </div>
+                        <p class="text-muted mb-0" style="font-size: 0.65rem;">Administrateur • À l'instant</p>
+                    </div>
+                </div>
+
                 <img id="previewImg" src="https://placehold.co/400x400?text=Votre+Photo" style="width: 100%; height: 250px; object-fit: cover;">
+
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 id="pTitle" class="fw-bold mb-0">Titre</h5>
                         <span id="pPrice" class="text-orange fw-bold">0 $</span>
                     </div>
                     <p id="pDesc" class="text-muted small mt-2">La description apparaîtra ici...</p>
-                    <button class="btn btn-orange w-100 rounded-pill disabled" style="font-size: 0.8rem;">Commander sur WhatsApp</button>
+                    <button class="btn btn-orange w-100 rounded-pill disabled" style="font-size: 0.8rem;">
+                        <i class="fab fa-whatsapp me-2"></i>Commander sur WhatsApp
+                    </button>
                 </div>
             </div>
         </div>
@@ -152,5 +167,6 @@ document.getElementById('uploadForm').onsubmit = async (e) => {
     .btn-orange { background: #FF6B00; color: white; border: none; }
     .btn-orange:hover { background: #e66000; color: white; }
     .text-orange { color: #FF6B00; }
+    .text-primary { color: #1877F2 !important; } /* Bleu Facebook pour le badge */
 </style>
 {% endblock %}

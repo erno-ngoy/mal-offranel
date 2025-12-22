@@ -9,33 +9,47 @@
 <div class="row g-4 mt-2">
     {% for product in products %}
     <div class="col-6 col-md-4 col-lg-3 animate__animated animate__zoomIn">
-        <div class="card h-100 border-0 shadow-sm" style="border-radius: 20px; transition: transform 0.3s;">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius: 20px; transition: transform 0.3s; overflow: hidden;">
+
+            <div class="p-2 d-flex align-items-center bg-white border-bottom">
+                <img src="{{ product.author_photo if product.author_photo else 'https://ui-avatars.com/api/?name=' ~ product.author_name ~ '&background=FF6B00&color=fff' }}"
+                     class="rounded-circle me-2" width="25" height="25" style="object-fit: cover;">
+                <div class="d-flex align-items-center">
+                    <span class="fw-bold text-dark" style="font-size: 0.75rem;">{{ product.author_name if product.author_name else 'Offranel Admin' }}</span>
+                    <i class="fas fa-check-circle text-primary ms-1" style="font-size: 0.7rem;" title="Certifié"></i>
+                </div>
+            </div>
 
             <a href="{{ url_for('detail_produit', id=product.id) }}" class="text-decoration-none">
                 {% if product.images and product.images is iterable and product.images|length > 0 %}
                     <img src="{{ product.images[0] }}" class="card-img-top" alt="{{ product.title }}"
-                         style="height: 200px; object-fit: cover; border-radius: 20px 20px 0 0;">
+                         style="height: 180px; object-fit: cover;">
                 {% elif product.photo_url %}
                     <img src="{{ product.photo_url }}" class="card-img-top" alt="{{ product.title }}"
-                         style="height: 200px; object-fit: cover; border-radius: 20px 20px 0 0;">
+                         style="height: 180px; object-fit: cover;">
                 {% else %}
                     <img src="https://placehold.co/400x400?text=Aucune+Image" class="card-img-top"
-                         style="height: 200px; object-fit: cover; border-radius: 20px 20px 0 0;">
+                         style="height: 180px; object-fit: cover;">
                 {% endif %}
             </a>
 
             <div class="card-body p-3">
                 <div class="d-flex justify-content-between align-items-start mb-1">
-                    <h6 class="fw-bold text-dark mb-0 text-truncate" style="max-width: 80%;">{{ product.title }}</h6>
+                    <h6 class="fw-bold text-dark mb-0 text-truncate" style="max-width: 100%;">{{ product.title }}</h6>
                 </div>
                 <p class="text-orange fw-bold mb-2">{{ product.price }} {{ product.currency }}</p>
 
                 <div class="d-grid gap-2">
+                    <button onclick="addToCart('{{ product.id }}', '{{ product.title }}', '{{ product.price }}', '{{ product.currency }}', '{{ product.images[0] if product.images else product.photo_url }}')"
+                            class="btn btn-orange btn-sm rounded-pill fw-bold">
+                        <i class="fas fa-cart-plus me-1"></i> Ajouter
+                    </button>
+
                     <a href="{{ url_for('detail_produit', id=product.id) }}" class="btn btn-outline-orange btn-sm rounded-pill">Détails</a>
 
                     {% if session.get('role') == 'admin' %}
                     <form action="{{ url_for('supprimer', id=product.id) }}" method="POST" onsubmit="return confirm('Supprimer cet article ?');">
-                        <button type="submit" class="btn btn-light btn-sm w-100 text-danger rounded-pill">Supprimer</button>
+                        <button type="submit" class="btn btn-light btn-sm w-100 text-danger rounded-pill mt-1">Supprimer</button>
                     </form>
                     {% endif %}
                 </div>
@@ -51,6 +65,30 @@
     </div>
     {% endfor %}
 </div>
+
+<script>
+function addToCart(id, title, price, currency, image) {
+    let cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
+
+    // Vérifier si déjà dans le panier
+    const exists = cart.find(item => item.id === id);
+    if (exists) {
+        alert("Cet article est déjà dans votre panier !");
+        return;
+    }
+
+    // Ajouter l'article
+    cart.push({ id, title, price, currency, image });
+    localStorage.setItem('offranel_cart', JSON.stringify(cart));
+
+    // Mettre à jour le badge dans base.html
+    if (typeof updateCartBadge === "function") {
+        updateCartBadge();
+    }
+
+    alert("Produit ajouté au panier ! 🍊");
+}
+</script>
 
 <style>
     .card:hover {
@@ -76,6 +114,9 @@
     }
     .text-orange {
         color: #FF6B00;
+    }
+    .text-primary {
+        color: #1877F2 !important; /* Bleu Facebook */
     }
 </style>
 

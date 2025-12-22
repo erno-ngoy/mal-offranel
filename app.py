@@ -63,6 +63,9 @@ def profile(uid=None):
 def set_session():
     data = request.get_json()
     uid = data.get('uid')
+    # On récupère le nom envoyé par le client (Google Auth par exemple)
+    user_name = data.get('name', 'Utilisateur')
+
     session.permanent = True
     user_ref = db.collection('users').document(uid)
     user_doc = user_ref.get()
@@ -70,7 +73,7 @@ def set_session():
     if not user_doc.exists:
         role = 'user'
         user_ref.set({
-            'name': data.get('name'),
+            'name': user_name,
             'email': data.get('email'),
             'photo': data.get('photo'),
             'role': role,
@@ -78,10 +81,17 @@ def set_session():
         })
     else:
         role = user_doc.to_dict().get('role', 'user')
+        # On garde le nom de la base de données s'il existe déjà
+        user_name = user_doc.to_dict().get('name', user_name)
         user_ref.update({'last_login': datetime.datetime.now()})
 
-    session.update({'user_id': uid, 'name': data.get('name'), 'photo': data.get('photo'), 'role': role})
-    return jsonify({"status": "ok", "role": role})
+    session.update({
+        'user_id': uid,
+        'name': user_name,
+        'photo': data.get('photo'),
+        'role': role
+    })
+    return jsonify({"status": "ok", "role": role, "username": user_name})
 
 
 @app.route('/produit/<id>')
@@ -104,7 +114,6 @@ def a_propos():
     return render_template('a_propos.html', content=content)
 
 
-# API pour que le JavaScript récupère le message du pop-up
 @app.route('/api/get_popup')
 def get_popup():
     doc = db.collection('settings').document('popup_message').get()
@@ -122,8 +131,6 @@ def admin_dashboard():
 
     users_count = len(list(db.collection('users').stream()))
     products_count = len(list(db.collection('products').stream()))
-
-    # Récupération de la config actuelle du popup
     pop_doc = db.collection('settings').document('popup_message').get()
     popup_data = pop_doc.to_dict() if pop_doc.exists else {"title": "", "content": "", "active": False}
 
@@ -172,6 +179,9 @@ def publier():
                 'currency': data.get('currency'),
                 'description': data.get('description'),
                 'images': [data.get('photo_url')],
+                'author_name': session.get('name'),  # Nom de l'admin qui publie
+                'author_photo': session.get('photo'),
+                'is_admin_post': True,  # Pour afficher le badge de certification
                 'created_at': datetime.datetime.now()
             })
             return jsonify({"status": "success"})

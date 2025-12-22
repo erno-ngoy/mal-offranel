@@ -17,6 +17,7 @@
             --offranel-orange: #FF6B00;
             --offranel-dark: #1A1A1A;
             --glass-bg: rgba(255, 255, 255, 0.9);
+            --fb-blue: #1877F2;
         }
 
         body {
@@ -27,6 +28,7 @@
 
         .text-orange { color: var(--offranel-orange) !important; }
         .bg-orange { background-color: var(--offranel-orange) !important; }
+        .text-fb { color: var(--fb-blue) !important; }
 
         /* --- NAVBAR --- */
         .navbar { padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
@@ -43,6 +45,13 @@
             transition: 0.3s;
         }
         .btn-orange:hover { background-color: #e66000; color: white; transform: translateY(-2px); }
+
+        /* --- PANIER BADGE --- */
+        .cart-badge {
+            font-size: 0.65rem;
+            padding: 4px 6px;
+            border: 2px solid white;
+        }
 
         /* --- COOKIE BANNER DESIGN --- */
         .cookie-banner {
@@ -78,13 +87,23 @@
                 <i class="fas fa-shopping-bag me-2"></i>OFFRANEL
             </a>
 
-            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <div class="d-flex align-items-center order-lg-3">
+                <a href="/panier" class="nav-link position-relative me-3">
+                    <i class="fas fa-shopping-cart fa-lg"></i>
+                    <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger cart-badge">
+                        0
+                    </span>
+                </a>
+
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
 
             <div class="collapse navbar-collapse" id="navMenu">
                 <div class="navbar-nav ms-auto align-items-center pt-3 pt-lg-0">
                     <a class="nav-link fw-semibold" href="/"><i class="fas fa-home me-1"></i> Accueil</a>
+                    <a class="nav-link fw-semibold" href="/a-propos">Qui sommes-nous ?</a>
 
                     {% if session.get('user_id') %}
                         {% if session.get('role') == 'admin' %}
@@ -95,8 +114,9 @@
 
                         <div class="dropdown mt-2 mt-lg-0">
                             <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" data-bs-toggle="dropdown">
+                                <span class="me-2 fw-bold d-none d-lg-inline">{{ session.get('name') }}</span>
                                 <img src="{{ session.get('photo') }}" class="rounded-circle border border-warning shadow-sm" width="38" height="38">
-                                <span class="d-lg-none ms-2">Mon Compte</span>
+                                <span class="d-lg-none ms-2">{{ session.get('name') }}</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 p-2 animate__animated animate__fadeIn">
                                 {% if session.get('role') == 'admin' %}
@@ -143,11 +163,36 @@
         </div>
     </div>
 
+    <div class="modal fade" id="autoPopup" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 20px; border: none;">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold text-orange" id="pTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4 text-center">
+                    <p id="pContent" class="fs-5 text-muted"></p>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-orange w-100 rounded-pill py-2 fw-bold" data-bs-dismiss="modal">OK, FERMER</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Gestion de l'affichage du bandeau de cookies
+        // Mise à jour du compteur de panier
+        function updateCartBadge() {
+            const cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
+            const badge = document.getElementById('cart-count');
+            if(badge) badge.innerText = cart.length;
+        }
+
+        // Gestion Cookies
         document.addEventListener("DOMContentLoaded", function() {
+            updateCartBadge();
             if (!localStorage.getItem("offranel_cookies_accepted")) {
                 setTimeout(() => {
                     document.getElementById("cookieBanner").style.display = "block";
@@ -161,47 +206,26 @@
             banner.classList.replace("animate__fadeInUp", "animate__fadeOutDown");
             setTimeout(() => { banner.style.display = "none"; }, 600);
         }
+
+        // Gestion Popup 24h
+        document.addEventListener('DOMContentLoaded', async () => {
+            const popupKey = 'offranel_popup_expire';
+            const now = new Date().getTime();
+            const expireTime = localStorage.getItem(popupKey);
+
+            if (!expireTime || now > parseInt(expireTime)) {
+                try {
+                    const response = await fetch('/api/get_popup');
+                    const data = await response.json();
+                    if (data.active) {
+                        document.getElementById('pTitle').innerText = data.title;
+                        document.getElementById('pContent').innerText = data.content;
+                        new bootstrap.Modal(document.getElementById('autoPopup')).show();
+                        localStorage.setItem(popupKey, now + (24 * 60 * 60 * 1000));
+                    }
+                } catch (e) { console.log("Erreur popup:", e); }
+            }
+        });
     </script>
-<div class="modal fade" id="autoPopup" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 20px; border: none;">
-            <div class="modal-header border-0">
-                <h5 class="modal-title fw-bold text-orange" id="pTitle"></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body py-4 text-center">
-                <p id="pContent" class="fs-5 text-muted"></p>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-orange w-100 rounded-pill py-2 fw-bold" data-bs-dismiss="modal">OK, FERMER</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', async () => {
-    const popupKey = 'offranel_popup_expire';
-    const now = new Date().getTime();
-    const expireTime = localStorage.getItem(popupKey);
-
-    // Si pas de date enregistrée ou si le délai de 24h est dépassé
-    if (!expireTime || now > parseInt(expireTime)) {
-        const response = await fetch('/api/get_popup');
-        const data = await response.json();
-
-        if (data.active) {
-            document.getElementById('pTitle').innerText = data.title;
-            document.getElementById('pContent').innerText = data.content;
-
-            const myModal = new bootstrap.Modal(document.getElementById('autoPopup'));
-            myModal.show();
-
-            // Enregistrer l'expiration (Heure actuelle + 24 heures en millisecondes)
-            localStorage.setItem(popupKey, now + (24 * 60 * 60 * 1000));
-        }
-    }
-});
-</script>
 </body>
 </html>

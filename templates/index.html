@@ -21,10 +21,11 @@
 
     <div class="d-flex gap-2 mt-3 overflow-auto pb-2 justify-content-start justify-content-md-center" style="white-space: nowrap; scrollbar-width: none;">
         <a href="/" class="btn btn-sm {{ 'btn-orange' if not request.args.get('category') else 'btn-outline-orange' }} rounded-pill px-3">Tout</a>
-        <a href="/?category=Chaussures" class="btn btn-sm {{ 'btn-orange' if request.args.get('category') == 'Chaussures' else 'btn-outline-orange' }} rounded-pill px-3">👟 Chaussures</a>
-        <a href="/?category=Vêtements" class="btn btn-sm {{ 'btn-orange' if request.args.get('category') == 'Vêtements' else 'btn-outline-orange' }} rounded-pill px-3">👕 Vêtements</a>
-        <a href="/?category=Montres" class="btn btn-sm {{ 'btn-orange' if request.args.get('category') == 'Montres' else 'btn-outline-orange' }} rounded-pill px-3">⌚ Montres</a>
-        <a href="/?category=Accessoires" class="btn btn-sm {{ 'btn-orange' if request.args.get('category') == 'Accessoires' else 'btn-outline-orange' }} rounded-pill px-3">👜 Accessoires</a>
+        {% for cat in categories %}
+            <a href="/?category={{ cat }}" class="btn btn-sm {{ 'btn-orange' if request.args.get('category') == cat else 'btn-outline-orange' }} rounded-pill px-3">
+                {{ cat }}
+            </a>
+        {% endfor %}
     </div>
 </div>
 
@@ -40,12 +41,14 @@
             {% endif %}
 
             <div class="p-2 d-flex align-items-center bg-white border-bottom">
-                <img src="{{ product.author_photo if product.author_photo else 'https://ui-avatars.com/api/?name=' ~ product.author_name ~ '&background=FF6B00&color=fff' }}"
-                     class="rounded-circle me-2" width="25" height="25" style="object-fit: cover;">
-                <div class="d-flex align-items-center">
-                    <span class="fw-bold text-dark" style="font-size: 0.75rem;">{{ product.author_name if product.author_name else 'Offranel Admin' }}</span>
-                    <i class="fas fa-check-circle text-primary ms-1" style="font-size: 0.7rem;" title="Certifié"></i>
-                </div>
+                <a href="/profile/{{ product.author_id }}" class="text-decoration-none d-flex align-items-center">
+                    <img src="{{ product.author_photo if product.author_photo else 'https://ui-avatars.com/api/?name=' ~ product.author_name ~ '&background=FF6B00&color=fff' }}"
+                         class="rounded-circle me-2" width="25" height="25" style="object-fit: cover;">
+                    <div class="d-flex align-items-center">
+                        <span class="fw-bold text-dark" style="font-size: 0.75rem;">{{ product.author_name if product.author_name else 'Offranel Admin' }}</span>
+                        <i class="fas fa-check-circle text-primary ms-1" style="font-size: 0.7rem;" title="Certifié"></i>
+                    </div>
+                </a>
             </div>
 
             <a href="{{ url_for('detail_produit', id=product.id) }}" class="text-decoration-none">

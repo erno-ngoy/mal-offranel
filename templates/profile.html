@@ -2,57 +2,81 @@
 {% block content %}
 <div class="container mt-5 animate__animated animate__fadeIn">
     <div class="row justify-content-center">
-        <div class="col-md-6 glass-card p-5 bg-white shadow text-center" style="border-radius: 30px; border: 2px solid #FF6B00;">
+        <div class="col-md-8 glass-card p-4 p-md-5 bg-white shadow text-center" style="border-radius: 30px; border: 2px solid #FF6B00;">
 
             <div class="position-relative d-inline-block">
-                <img src="{{ session['photo'] }}" class="rounded-circle mb-3 shadow" style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #FF6B00;">
-                {% if session['role'] == 'admin' %}
+                <img src="{{ user.photo }}" class="rounded-circle mb-3 shadow" style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #FF6B00;">
+                {% if user.role == 'admin' %}
                 <span class="position-absolute bottom-0 end-0 bg-white rounded-circle p-1" style="transform: translate(-10%, -20%);">
                     <i class="fas fa-check-circle text-primary" style="font-size: 1.5rem;"></i>
                 </span>
                 {% endif %}
             </div>
 
-            <h2 class="fw-bold mt-2">{{ session['name'] }}</h2>
-            <p class="text-muted small mb-3">{{ session['email'] if session['email'] else 'Compte Client Offranel' }}</p>
+            <h2 class="fw-bold mt-2">{{ user.name }}</h2>
+            <p class="text-muted small mb-3">{{ user.email if user.email else 'Vendeur Offranel' }}</p>
 
             <div class="d-flex justify-content-center gap-2 mb-4">
-                <span class="badge bg-orange px-3 py-2 rounded-pill shadow-sm">Rôle: {{ session['role']|capitalize }}</span>
+                <span class="badge bg-orange px-3 py-2 rounded-pill shadow-sm">Rôle: {{ user.role|capitalize }}</span>
                 <span id="cart-stat-badge" class="badge bg-light text-dark px-3 py-2 rounded-pill border shadow-sm">0 au panier</span>
             </div>
 
             <hr class="my-4 opacity-25">
 
+            <div class="text-start mb-4">
+                <h5 class="fw-bold text-orange mb-3"><i class="fas fa-th me-2"></i>Publications de {{ user.name }}</h5>
+                <div class="row g-3">
+                    {% if products %}
+                        {% for product in products %}
+                        <div class="col-6 col-md-4">
+                            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative">
+                                <a href="/produit/{{ product.id }}">
+                                    <img src="{{ product.images[0] if product.images else 'https://placehold.co/400' }}" class="card-img-top" style="height: 140px; object-fit: cover;">
+                                </a>
+                                <div class="card-body p-2 text-center">
+                                    <p class="small fw-bold mb-0 text-truncate">{{ product.title }}</p>
+                                    <p class="text-orange small mb-0">{{ product.price }} {{ product.currency }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="col-12 text-center py-4 bg-light rounded-4">
+                            <i class="fas fa-box-open text-muted fa-2x mb-2"></i>
+                            <p class="text-muted small mb-0">Aucun article publié par ce vendeur.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
             <div class="d-grid gap-3">
-                {% if session['role'] == 'admin' %}
-                <h6 class="text-start fw-bold text-orange mb-0"><i class="fas fa-tools me-2"></i>Administration</h6>
-                <a href="/admin/dashboard" class="btn btn-orange rounded-pill py-2 shadow-sm">
-                    <i class="fas fa-chart-line me-2"></i>Tableau de Bord
-                </a>
-                <a href="/publier" class="btn btn-outline-orange rounded-pill py-2">
-                    <i class="fas fa-plus-circle me-2"></i>Publier un article
-                </a>
-                {% else %}
-                <h6 class="text-start fw-bold text-orange mb-0"><i class="fas fa-shopping-bag me-2"></i>Mes Achats</h6>
-                <a href="/panier" class="btn btn-orange rounded-pill py-2 shadow-sm">
-                    <i class="fas fa-shopping-cart me-2"></i>Voir mon Panier
-                </a>
+                {% if session['user_id'] == user.id or session['role'] == 'admin' %}
+                    {% if session['role'] == 'admin' %}
+                    <h6 class="text-start fw-bold text-orange mb-0"><i class="fas fa-tools me-2"></i>Administration</h6>
+                    <a href="/admin/dashboard" class="btn btn-orange rounded-pill py-2 shadow-sm">
+                        <i class="fas fa-chart-line me-2"></i>Tableau de Bord
+                    </a>
+                    <a href="/publier" class="btn btn-outline-orange rounded-pill py-2">
+                        <i class="fas fa-plus-circle me-2"></i>Publier un article
+                    </a>
+                    {% endif %}
                 {% endif %}
 
                 <a href="/" class="btn btn-light rounded-pill py-2 text-muted border">
                     <i class="fas fa-home me-2"></i>Retour à la boutique
                 </a>
 
+                {% if session['user_id'] == user.id %}
                 <a href="/logout" class="btn btn-outline-danger rounded-pill py-2 mt-2">
                     <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
                 </a>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // Petite fonction pour afficher le nombre d'articles au panier sur le profil
     function updateProfileStats() {
         const cart = JSON.parse(localStorage.getItem('offranel_cart') || '[]');
         const badge = document.getElementById('cart-stat-badge');
@@ -70,6 +94,7 @@
     .btn-outline-orange { color: #FF6B00; border: 1.5px solid #FF6B00; }
     .btn-outline-orange:hover { background-color: #FF6B00; color: white; }
     .text-orange { color: #FF6B00; }
-    .text-primary { color: #1877F2 !important; } /* Bleu Facebook */
+    .text-primary { color: #1877F2 !important; }
+    .glass-card { transition: all 0.3s ease; }
 </style>
 {% endblock %}

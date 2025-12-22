@@ -17,9 +17,12 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 # --- CONFIGURATION NOTIFICATIONS PUSH (VAPID) ---
 VAPID_PUBLIC_KEY = "BOT0JEWz9-w_eTSqZXlLXewXXq4hT3zvWPFfyb68z-aH80OVc1oX2xvftH4d3rhQMKT5ibT8vkHK7vAIbaTq29Q"
-# IMPORTANT : Remplacez par votre clé privée secrète (générée avec pywebpush ou console Firebase)
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "VOTRE_CLE_PRIVEE_SECRET")
 VAPID_CLAIMS = {"sub": "mailto:admin@offranel.com"}
+
+# --- LISTE DES CATÉGORIES ---
+CATEGORIES = ["Électronique", "Mode", "Maison", "Beauté", "Sport", "Alimentation", "Services", "Véhicules",
+              "Immobilier", "Autres"]
 
 # --- INITIALISATION FIREBASE ---
 if not firebase_admin._apps:
@@ -45,9 +48,9 @@ def login_required(f):
 
     return decorated_function
 
+
 # --- FONCTION D'ENVOI D'ALERTES PUSH ---
 def trigger_push_notifications(title, body):
-    """Envoie une alerte qui fait vibrer le smartphone de tous les abonnés"""
     try:
         subscriptions = db.collection('push_subscriptions').stream()
         for sub in subscriptions:
@@ -55,20 +58,16 @@ def trigger_push_notifications(title, body):
                 sub_data = sub.to_dict()
                 webpush(
                     subscription_info=sub_data,
-                    data=json.dumps({
-                        "title": title,
-                        "body": body,
-                        "icon": "/static/img/image.png"
-                    }),
+                    data=json.dumps({"title": title, "body": body, "icon": "/static/img/image.png"}),
                     vapid_private_key=VAPID_PRIVATE_KEY,
                     vapid_claims=VAPID_CLAIMS
                 )
             except WebPushException as ex:
-                # Si le token est expiré ou invalide, on nettoie la base
                 if ex.response and ex.response.status_code in [404, 410]:
                     db.collection('push_subscriptions').document(sub.id).delete()
     except Exception as e:
         print(f"Erreur globale Push: {e}")
+
 
 # --- ROUTES UTILISATEURS ---
 
@@ -76,7 +75,6 @@ def trigger_push_notifications(title, body):
 def index():
     search_query = request.args.get('search', '').lower()
     category_filter = request.args.get('category', '')
-
     try:
         products_stream = db.collection('products').order_by('created_at', direction='DESCENDING').stream()
         products = []
@@ -85,13 +83,12 @@ def index():
             p['id'] = doc.id
             match_search = search_query in p.get('title', '').lower() if search_query else True
             match_cat = p.get('category') == category_filter if category_filter else True
-
             if match_search and match_cat:
                 products.append(p)
     except Exception as e:
         print(f"Erreur Firestore : {e}")
         products = []
-    return render_template('index.html', products=products)
+    return render_template('index.html', products=products, categories=CATEGORIES)
 
 
 @app.route('/login')
@@ -100,12 +97,11 @@ def login_page():
         return redirect(url_for('index'))
     return render_template('login.html')
 
-# --- AJOUT : ROUTE POUR ENREGISTRER L'ABONNEMENT DU MOBILE ---
+
 @app.route('/api/save-subscription', methods=['POST'])
 def save_subscription():
     data = request.get_json()
     if data:
-        # On identifie l'abonnement par l'UID ou un hash de l'endpoint
         sub_id = session.get('user_id', f"guest_{datetime.datetime.now().timestamp()}")
         db.collection('push_subscriptions').document(str(sub_id)).set(data)
         return jsonify({"status": "success"})
@@ -118,8 +114,19 @@ def save_subscription():
 def profile(uid=None):
     target_uid = uid if uid else session.get('user_id')
     user_doc = db.collection('users').document(target_uid).get()
+
     if user_doc.exists:
-        return render_template('profile.html', user=user_doc.to_dict())
+        user_info = user_doc.to_dict()
+        # Récupération des produits de cet utilisateur spécifique
+        products_ref = db.collection('products').where('author_id', '==', target_uid).order_by('created_at',
+                                                                                               direction='DESCENDING').stream()
+        user_products = []
+        for doc in products_ref:
+            p = doc.to_dict()
+            p['id'] = doc.id
+            user_products.append(p)
+
+        return render_template('profile.html', user=user_info, products=user_products)
     return "Utilisateur non trouvé 😕", 404
 
 
@@ -128,7 +135,6 @@ def set_session():
     data = request.get_json()
     uid = data.get('uid')
     user_name = data.get('name', 'Utilisateur')
-
     session.permanent = True
     user_ref = db.collection('users').document(uid)
     user_doc = user_ref.get()
@@ -183,7 +189,6 @@ def get_popup():
 
 @app.route('/api/get_last_notif')
 def get_last_notif():
-    """Récupère la dernière action pour notifier les utilisateurs"""
     notif_ref = db.collection('notifications').order_by('timestamp', direction='DESCENDING').limit(1).get()
     if notif_ref:
         return jsonify(notif_ref[0].to_dict())
@@ -197,12 +202,10 @@ def get_last_notif():
 def admin_dashboard():
     if session.get('role') != 'admin':
         return redirect(url_for('index'))
-
     users_count = len(list(db.collection('users').stream()))
     products_count = len(list(db.collection('products').stream()))
     pop_doc = db.collection('settings').document('popup_message').get()
     popup_data = pop_doc.to_dict() if pop_doc.exists else {"title": "", "content": "", "active": False}
-
     stats = {"total_users": users_count, "total_products": products_count, "active_now": 1}
     return render_template('admin_dashboard.html', stats=stats, popup=popup_data)
 
@@ -212,7 +215,6 @@ def admin_dashboard():
 def toggle_stock(id):
     if session.get('role') != 'admin':
         return jsonify({"status": "error"}), 403
-
     product_ref = db.collection('products').document(id)
     doc = product_ref.get()
     if doc.exists:
@@ -260,7 +262,6 @@ def publier():
     if request.method == 'POST':
         try:
             data = request.get_json()
-            # Ajout du produit
             new_product_ref = db.collection('products').add({
                 'title': data.get('title'),
                 'price': data.get('price'),
@@ -269,13 +270,13 @@ def publier():
                 'description': data.get('description'),
                 'images': data.get('images'),
                 'in_stock': True,
+                'author_id': session.get('user_id'),  # Stocke l'ID pour le lien profil
                 'author_name': session.get('name'),
                 'author_photo': session.get('photo'),
                 'is_admin_post': True,
                 'created_at': datetime.datetime.now()
             })
 
-            # 1. NOTIFICATION DANS L'APPLI (Cloche)
             db.collection('notifications').add({
                 'id': str(datetime.datetime.now().timestamp()),
                 'title': "Nouvel arrivage ! 🍊",
@@ -283,17 +284,15 @@ def publier():
                 'timestamp': datetime.datetime.now()
             })
 
-            # 2. ALERTE PHYSIQUE (Fait vibrer le téléphone)
             trigger_push_notifications(
                 "OFFRANEL : Nouveau produit ! 🍊",
                 f"Découvrez : {data.get('title')}"
             )
-
             return jsonify({"status": "success"})
         except Exception as e:
             print(f"ERREUR PUBLICATION : {e}")
             return jsonify({"status": "error", "message": str(e)}), 500
-    return render_template('publier.html')
+    return render_template('publier.html', categories=CATEGORIES)
 
 
 @app.route('/supprimer/<id>', methods=['POST'])

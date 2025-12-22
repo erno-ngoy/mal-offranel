@@ -8,18 +8,17 @@ import json
 app = Flask(__name__)
 app.secret_key = "offranel_orange_secret"
 
-# --- INITIALISATION FIREBASE ( Railway + Local ) ---
+# --- CONFIGURATION FIREBASE (RAILWAY + LOCAL) ---
 if not firebase_admin._apps:
-    # On cherche d'abord la variable d'environnement (pour Railway)
+    # On cherche la variable d'environnement sur Railway
     service_account_info = os.environ.get('FIREBASE_CONFIG')
 
     if service_account_info:
-        # Configuration pour Railway
+        # Configuration pour le serveur en ligne
         cred_dict = json.loads(service_account_info)
         cred = credentials.Certificate(cred_dict)
     else:
-        # Configuration pour ton PC local
-        # Assure-toi que le fichier est bien présent dans ton dossier
+        # Configuration pour ton PC (local)
         cred = credentials.Certificate("serviceAccountKey.json")
 
     firebase_admin.initialize_app(cred)
@@ -27,10 +26,11 @@ if not firebase_admin._apps:
 db = firestore.client()
 
 
-# --- ROUTES PRINCIPALES ---
+# --- ROUTES CLIENTS ---
 
 @app.route('/')
 def index():
+    # Récupération des produits triés par date (Correction : order_by)
     products_stream = db.collection('products').order_by('created_at', direction='DESCENDING').stream()
     products = []
     for doc in products_stream:
@@ -53,15 +53,17 @@ def set_session():
     user_doc = user_ref.get()
 
     if not user_doc.exists:
-        role = 'user'
+        role = 'user'  # Rôle par défaut
         user_ref.set({
             'name': data.get('name'),
             'email': data.get('email'),
             'photo': data.get('photo'),
-            'role': role
+            'role': role,
+            'last_login': datetime.datetime.now()
         })
     else:
         role = user_doc.to_dict().get('role', 'user')
+        user_ref.update({'last_login': datetime.datetime.now()})
 
     session.update({
         'user_id': uid,
@@ -80,6 +82,36 @@ def profile(uid=None):
     return render_template('profile.html')
 
 
+@app.route('/produit/<id>')
+def detail_produit(id):
+    doc = db.collection('products').document(id).get()
+    if doc.exists:
+        return render_template('detail.html', product=doc.to_dict(), id=id)
+    return "Produit non trouvé 😕", 404
+
+
+# --- ROUTES ADMINISTRATEUR (SÉCURISÉES) ---
+
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    # Seul l'admin peut voir les stats
+    if session.get('role') != 'admin':
+        flash("Accès refusé !", "danger")
+        return redirect(url_for('index'))
+
+    # Calcul des statistiques
+    total_users = len(list(db.collection('users').stream()))
+    total_products = len(list(db.collection('products').stream()))
+
+    # On simule les utilisateurs actifs (ceux connectés ces dernières 24h)
+    stats = {
+        "total_users": total_users,
+        "total_products": total_products,
+        "active_now": 1  # Vous pouvez affiner cela plus tard
+    }
+    return render_template('admin_dashboard.html', stats=stats)
+
+
 @app.route('/publier', methods=['GET', 'POST'])
 def publier():
     if session.get('role') != 'admin':
@@ -92,20 +124,11 @@ def publier():
             'price': data.get('price'),
             'currency': data.get('currency'),
             'description': data.get('description'),
-            'images': [data.get('photo_url')],
+            'images': [data.get('photo_url')],  # Base64
             'created_at': datetime.datetime.now()
         })
         return jsonify({"status": "success"})
-
     return render_template('publier.html')
-
-
-@app.route('/produit/<id>')
-def detail_produit(id):
-    doc = db.collection('products').document(id).get()
-    if doc.exists:
-        return render_template('detail.html', product=doc.to_dict(), id=id)
-    return "Produit non trouvé 😕", 404
 
 
 @app.route('/supprimer/<id>', methods=['POST'])
@@ -121,5 +144,8 @@ def logout():
     return redirect(url_for('index'))
 
 
+# --- LANCEMENT ---
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Indispensable pour Railway qui utilise le port 8080 par défaut
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)

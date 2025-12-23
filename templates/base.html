@@ -130,6 +130,28 @@
             border: 2px solid white;
         }
 
+        /* --- NOUVELLES ANIMATIONS --- */
+        .notif-badge:not(.d-none) {
+            animation: pulse-red 2s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% { transform: translate(100%, -50%) scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { transform: translate(100%, -50%) scale(1.2); box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
+            100% { transform: translate(100%, -50%) scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+
+        .cart-bounce {
+            animation: cartJump 0.5s ease-in-out;
+        }
+
+        @keyframes cartJump {
+            0% { transform: scale(1); }
+            30% { transform: scale(1.4) rotate(-10deg); }
+            50% { transform: scale(1.4) rotate(10deg); }
+            100% { transform: scale(1); }
+        }
+
         /* --- RECHERCHE --- */
         .search-container {
             max-width: 500px;
@@ -239,7 +261,7 @@
                 </span>
             </a>
 
-            <a href="/panier" class="nav-link position-relative me-3">
+            <a href="/panier" class="nav-link position-relative me-3" id="cart-icon-wrapper">
                 <i class="fas fa-shopping-cart fa-lg"></i>
                 <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger cart-badge">
                     0
@@ -352,6 +374,16 @@
             nav.classList.remove('scrolled');
         }
     });
+
+    // --- FONCTION ANIMATION PANIER ---
+    function animateCart() {
+        const cartWrapper = document.getElementById('cart-icon-wrapper');
+        if(cartWrapper) {
+            cartWrapper.classList.remove('cart-bounce');
+            void cartWrapper.offsetWidth; // Force reflow
+            cartWrapper.classList.add('cart-bounce');
+        }
+    }
 
     // --- FONCTION ALERTE HAUTE PRIORITÉ (VIBRATION + NOTIF) ---
     function triggerAppAlert(title, message) {
@@ -472,10 +504,19 @@
     }
     setInterval(checkNotifications, 30000);
 
+    // GESTION PANIER AVEC ANIMATION
+    let lastCartLength = (JSON.parse(localStorage.getItem('offranel_cart')) || []).length;
+
     function updateCartBadge() {
         const cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
         const countElement = document.getElementById('cart-count');
-        if(countElement) countElement.innerText = cart.length;
+        if(countElement) {
+            countElement.innerText = cart.length;
+            if(cart.length > lastCartLength) {
+                animateCart();
+            }
+            lastCartLength = cart.length;
+        }
     }
 
     function acceptCookies() {
@@ -492,6 +533,7 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         updateCartBadge();
+        window.addEventListener('storage', updateCartBadge);
         if (!sessionStorage.getItem("offranel_session_accepted")) {
             setTimeout(() => {
                 const banner = document.getElementById("cookieBanner");

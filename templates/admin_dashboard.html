@@ -18,7 +18,7 @@
                 <div class="bg-orange-light rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
                     <i class="fas fa-users text-orange fa-lg"></i>
                 </div>
-                <h3 class="fw-bold mb-0">{{ stats.total_users }}</h3>
+                <h3 class="fw-bold mb-0" id="stat-users">{{ stats.total_users|default(0) }}</h3>
                 <p class="text-muted small mb-0">Utilisateurs</p>
             </div>
         </div>
@@ -28,7 +28,7 @@
                 <div class="bg-dark-light rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 55px; height: 55px; background: #f0f0f0;">
                     <i class="fas fa-box-open text-dark fa-lg"></i>
                 </div>
-                <h3 class="fw-bold mb-0">{{ stats.total_products }}</h3>
+                <h3 class="fw-bold mb-0" id="stat-products">{{ stats.total_products|default(0) }}</h3>
                 <p class="text-muted small mb-0">Articles</p>
             </div>
         </div>
@@ -37,7 +37,7 @@
             <div class="glass-card text-center p-3 h-100 shadow-sm d-flex flex-column justify-content-center border-0" style="background: linear-gradient(145deg, #ffffff, #fff5ee);">
                 <div class="d-flex align-items-center justify-content-center">
                     <span class="spinner-grow spinner-grow-sm text-success me-2"></span>
-                    <h3 class="fw-bold mb-0">{{ stats.active_now }}</h3>
+                    <h3 class="fw-bold mb-0" id="active-count">{{ stats.active_now|default(1) }}</h3>
                 </div>
                 <p class="text-muted small mb-0 fw-bold">Actif en ce moment</p>
             </div>
@@ -58,11 +58,11 @@
                 <div class="row g-3">
                     <div class="col-md-5">
                         <label class="form-label small fw-bold text-dark">Titre du Pop-up</label>
-                        <input type="text" id="adminPopTitle" class="form-control rounded-pill border-orange-light" value="{{ popup.title }}" placeholder="Ex: Promotion de Noël ! 🎄">
+                        <input type="text" id="adminPopTitle" class="form-control rounded-pill border-orange-light" value="{{ popup.title|default('') }}" placeholder="Ex: Promotion de Noël ! 🎄">
                     </div>
                     <div class="col-md-7">
                         <label class="form-label small fw-bold text-dark">Message / Contenu</label>
-                        <textarea id="adminPopContent" class="form-control rounded-4 border-orange-light" rows="2" placeholder="Écrivez votre message ici...">{{ popup.content }}</textarea>
+                        <textarea id="adminPopContent" class="form-control rounded-4 border-orange-light" rows="2" placeholder="Écrivez votre message ici...">{{ popup.content|default('') }}</textarea>
                     </div>
                 </div>
 
@@ -119,7 +119,7 @@
     async function savePopup() {
         const btn = document.querySelector('button[onclick="savePopup()"]');
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enregistrement...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>...';
 
         const data = {
             title: document.getElementById('adminPopTitle').value,
@@ -134,61 +134,65 @@
                 body: JSON.stringify(data)
             });
             if (res.ok) {
-                // Animation de succès
                 alert("📢 Annonce enregistrée avec succès !");
             } else {
                 alert("Erreur lors de l'enregistrement.");
             }
         } catch (e) {
-            console.error(e);
             alert("Erreur de connexion au serveur.");
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-save me-2"></i>Mettre à jour l'annonce';
+            btn.innerHTML = '<i class="fas fa-save me-2"></i>Mettre à jour l\'annonce';
         }
     }
 
-    // INITIALISATION DU GRAPHIQUE
+    // INITIALISATION DU GRAPHIQUE CORRIGÉE
     document.addEventListener('DOMContentLoaded', function() {
-        const ctx = document.getElementById('offranelChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Utilisateurs', 'Produits'],
-                datasets: [{
-                    data: [{{ stats.total_users }}, {{ stats.total_products }}],
-                    backgroundColor: ['#FF6B00', '#1A1A1A'],
-                    hoverOffset: 15,
-                    borderWidth: 0,
-                    borderRadius: 10
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '70%',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 20,
-                            font: { family: 'Poppins', size: 12 }
-                        }
+        const canvas = document.getElementById('offranelChart');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            const uCount = parseInt("{{ stats.total_users|default(0) }}") || 0;
+            const pCount = parseInt("{{ stats.total_products|default(0) }}") || 0;
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Utilisateurs', 'Produits'],
+                    datasets: [{
+                        data: [uCount, pCount],
+                        backgroundColor: ['#FF6B00', '#1A1A1A'],
+                        hoverOffset: 15,
+                        borderWidth: 0,
+                        borderRadius: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { position: 'bottom' }
                     }
                 }
+            });
+        }
+
+        // Simulation des utilisateurs actifs
+        setInterval(() => {
+            const el = document.getElementById('active-count');
+            if(el) {
+                let current = parseInt(el.innerText);
+                let change = Math.floor(Math.random() * 3) - 1; // -1, 0 ou 1
+                el.innerText = Math.max(1, current + change);
             }
-        });
+        }, 8000);
     });
 </script>
 
 <style>
     .bg-orange-light { background-color: rgba(255, 107, 0, 0.1); }
     .border-orange-light { border: 1px solid rgba(255, 107, 0, 0.2) !important; }
-    .glass-card {
-        background: white;
-        border-radius: 20px;
-        transition: all 0.3s ease;
-    }
+    .glass-card { background: white; border-radius: 20px; transition: all 0.3s ease; }
     .glass-card:hover { transform: translateY(-3px); }
     .btn-orange { background-color: #FF6B00; color: white; border: none; }
     .btn-orange:hover { background-color: #e66000; color: white; transform: scale(1.02); }
@@ -196,11 +200,6 @@
     .btn-outline-orange:hover { background-color: #FF6B00; color: white; }
     .text-orange { color: #FF6B00; }
     .transition-all { transition: all 0.3s ease; }
-
-    /* Switch personnalisé orange */
-    .form-check-input:checked {
-        background-color: #FF6B00;
-        border-color: #FF6B00;
-    }
+    .form-check-input:checked { background-color: #FF6B00; border-color: #FF6B00; }
 </style>
 {% endblock %}

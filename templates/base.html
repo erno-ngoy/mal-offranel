@@ -18,6 +18,8 @@
     <link rel="icon" type="image/png" href="/static/img/image.png">
     <link rel="apple-touch-icon" href="/static/img/images.png">
 
+    <link rel="icon" href="data:,">
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
 
@@ -243,7 +245,7 @@
                             {% if session.get('role') == 'admin' %}
                                 <li><a class="dropdown-item fw-bold text-orange" href="/admin/dashboard"><i class="fas fa-chart-line me-2"></i>Dashboard</a></li>
                             {% endif %}
-                            <li><a class="dropdown-item" href="/profile/{{ session.get('user_id') }}"><i class="fas fa-user-circle me-2"></i>Mon Profil</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('profile', uid=session.get('user_id')) }}"><i class="fas fa-user-circle me-2"></i>Mon Profil</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item text-danger" href="/logout"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
                         </ul>

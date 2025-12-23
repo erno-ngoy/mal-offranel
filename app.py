@@ -115,25 +115,37 @@ def profile(uid=None):
     # Sécurité : Si l'UID est 'None' ou vide à cause d'un ancien produit
     target_uid = uid if uid and uid != 'None' else session.get('user_id')
 
-    user_doc = db.collection('users').document(target_uid).get()
+    try:
+        user_doc = db.collection('users').document(target_uid).get()
 
-    if user_doc.exists:
-        user_info = user_doc.to_dict()
-        user_info['id'] = user_doc.id
+        if user_doc.exists:
+            user_info = user_doc.to_dict()
+            user_info['id'] = user_doc.id
 
-        # Récupération des produits de cet utilisateur spécifique
-        products_ref = db.collection('products').where('author_id', '==', target_uid).order_by('created_at',
-                                                                                               direction='DESCENDING').stream()
-        user_products = []
-        for doc in products_ref:
-            p = doc.to_dict()
-            p['id'] = doc.id
-            user_products.append(p)
+            # RÉPARATION : Try/Except pour éviter l'erreur 500 si l'index Firestore n'est pas créé
+            user_products = []
+            try:
+                products_ref = db.collection('products').where('author_id', '==', target_uid).order_by('created_at', direction='DESCENDING').stream()
+                for doc in products_ref:
+                    p = doc.to_dict()
+                    p['id'] = doc.id
+                    user_products.append(p)
+            except Exception as e:
+                print(f"Index manquant ou erreur de tri : {e}")
+                # Fallback : On récupère les produits sans le tri pour éviter le crash
+                products_ref = db.collection('products').where('author_id', '==', target_uid).stream()
+                for doc in products_ref:
+                    p = doc.to_dict()
+                    p['id'] = doc.id
+                    user_products.append(p)
 
-        return render_template('profile.html', user=user_info, products=user_products)
+            return render_template('profile.html', user=user_info, products=user_products)
 
-    flash("Profil introuvable ou ID manquant.", "danger")
-    return redirect(url_for('index'))
+        flash("Profil introuvable.", "danger")
+        return redirect(url_for('index'))
+    except Exception as global_e:
+        print(f"Erreur système profil : {global_e}")
+        return "Erreur Interne du Serveur", 500
 
 
 @app.route('/set_session', methods=['POST'])

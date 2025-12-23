@@ -307,15 +307,27 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // --- NOUVEAU : LOGIQUE POP-UP D'ANNONCE ---
+    // --- FONCTION ALERTE HAUTE PRIORITÉ (VIBRATION + NOTIF) ---
+    function triggerAppAlert(title, message) {
+        if ('vibrate' in navigator) {
+            navigator.vibrate([150, 50, 150]); // Double vibration style App
+        }
+        if (Notification.permission === "granted") {
+            new Notification(title, {
+                body: message,
+                icon: "/static/img/image.png"
+            });
+        }
+    }
+
+    // --- LOGIQUE POP-UP D'ANNONCE (SYSTEMATIQUE) ---
     function checkAnnouncementPopup() {
         const isPopupActive = "{{ popup.active if popup else 'False' }}" === "True";
         const popupTitle = "{{ popup.title if popup else '' }}";
         const popupContent = "{{ popup.content if popup else '' }}";
-        const lastSeenPopup = localStorage.getItem('offranel_popup_seen');
 
-        // On affiche si c'est actif ET si le titre a changé (nouvelle annonce)
-        if (isPopupActive && popupTitle !== "" && lastSeenPopup !== popupTitle) {
+        // Suppression de la vérification localStorage pour afficher à CHAQUE connexion
+        if (isPopupActive && popupTitle !== "") {
             const modalEl = document.getElementById('autoPopup');
             if (modalEl) {
                 document.getElementById('pTitle').innerText = popupTitle;
@@ -324,8 +336,8 @@
                 const myModal = new bootstrap.Modal(modalEl);
                 setTimeout(() => {
                     myModal.show();
-                    localStorage.setItem('offranel_popup_seen', popupTitle);
-                }, 3000); // Délai de 3s après le chargement
+                    triggerAppAlert("Offranel Info 🍊", popupTitle);
+                }, 2500);
             }
         }
     }
@@ -361,7 +373,7 @@
         });
     }
 
-    // --- AJOUT : LOGIQUE DES ALERTES TÉLÉPHONE ---
+    // --- LOGIQUE DES ALERTES TÉLÉPHONE ---
     const VAPID_PUBLIC_KEY = 'BOT0JEWz9-w_eTSqZXlLXewXXq4hT3zvWPFfyb68z-aH80OVc1oX2xvftH4d3rhQMKT5ibT8vkHK7vAIbaTq29Q';
 
     function urlBase64ToUint8Array(base64String) {
@@ -385,19 +397,17 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(subscription)
                 });
-                console.log("Smartphone enregistré pour les alertes !");
             } catch (err) {
                 console.error("Erreur d'abonnement push:", err);
             }
         }
     }
 
-    // SERVICE WORKER REGISTRATION
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').catch(err => console.log(err));
     }
 
-    // NOTIFICATIONS SYSTEM
+    // --- NOTIFICATIONS TEMPS RÉEL (ALERTE IMPORTANTE) ---
     async function checkNotifications() {
         try {
             const response = await fetch('/api/get_last_notif');
@@ -405,15 +415,18 @@
             const lastId = localStorage.getItem('offranel_last_notif');
 
             if (data.id && data.id != lastId) {
+                localStorage.setItem('offranel_last_notif', data.id);
                 const badge = document.getElementById('notif-count');
                 if(badge) {
                     badge.innerText = "!";
                     badge.classList.remove('d-none');
                 }
+                // Déclencher l'alerte vibration/notif
+                triggerAppAlert("Nouvel Arrivage ! 🍊", data.message || "Un nouvel article est disponible.");
             }
         } catch(e) {}
     }
-    setInterval(checkNotifications, 60000);
+    setInterval(checkNotifications, 30000); // Toutes les 30 sec
 
     // GESTION PANIER
     function updateCartBadge() {
@@ -422,8 +435,10 @@
         if(countElement) countElement.innerText = cart.length;
     }
 
+    // --- GESTION COOKIES (SESSION-BASED) ---
     function acceptCookies() {
-        localStorage.setItem("offranel_cookies_accepted", "true");
+        // On utilise sessionStorage pour que ça s'affiche à chaque nouvelle connexion au compte/site
+        sessionStorage.setItem("offranel_session_accepted", "true");
         const banner = document.getElementById("cookieBanner");
         if(banner) banner.style.display = "none";
 
@@ -437,15 +452,15 @@
     document.addEventListener("DOMContentLoaded", () => {
         updateCartBadge();
 
-        // Affichage des cookies si non acceptés
-        if (!localStorage.getItem("offranel_cookies_accepted")) {
+        // Cookies : Vérifie la session actuelle
+        if (!sessionStorage.getItem("offranel_session_accepted")) {
             setTimeout(() => {
                 const banner = document.getElementById("cookieBanner");
                 if(banner) banner.style.display = "block";
-            }, 2000);
+            }, 1500);
         }
 
-        // Vérification de l'annonce Pop-up
+        // Vérification systématique du Pop-up
         checkAnnouncementPopup();
     });
 </script>

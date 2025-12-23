@@ -6,7 +6,6 @@ from datetime import timedelta
 import os
 import json
 from functools import wraps
-# AJOUT : Import pour les alertes physiques (nécessite : pip install pywebpush)
 from pywebpush import webpush, WebPushException
 
 app = Flask(__name__)
@@ -75,6 +74,16 @@ def trigger_push_notifications(title, body):
 def index():
     search_query = request.args.get('search', '').lower()
     category_filter = request.args.get('category', '')
+
+    # --- AJOUT : RÉCUPÉRATION DU POPUP POUR TOUS LES UTILISATEURS ---
+    popup_data = None
+    try:
+        pop_doc = db.collection('settings').document('popup_message').get()
+        if pop_doc.exists:
+            popup_data = pop_doc.to_dict()
+    except Exception as e:
+        print(f"Erreur popup index: {e}")
+
     try:
         products_stream = db.collection('products').order_by('created_at', direction='DESCENDING').stream()
         products = []
@@ -88,7 +97,9 @@ def index():
     except Exception as e:
         print(f"Erreur Firestore : {e}")
         products = []
-    return render_template('index.html', products=products, categories=CATEGORIES)
+
+    # On passe 'popup=popup_data' pour que base.html puisse l'afficher
+    return render_template('index.html', products=products, categories=CATEGORIES, popup=popup_data)
 
 
 @app.route('/login')
@@ -112,39 +123,30 @@ def save_subscription():
 @app.route('/profile/<uid>')
 @login_required
 def profile(uid=None):
-    # Sécurité : Si l'UID est 'None' ou vide à cause d'un ancien produit
     target_uid = uid if uid and uid != 'None' else session.get('user_id')
-
     try:
         user_doc = db.collection('users').document(target_uid).get()
-
         if user_doc.exists:
             user_info = user_doc.to_dict()
             user_info['id'] = user_doc.id
-
-            # RÉPARATION : Try/Except pour éviter l'erreur 500 si l'index Firestore n'est pas créé
             user_products = []
             try:
-                products_ref = db.collection('products').where('author_id', '==', target_uid).order_by('created_at', direction='DESCENDING').stream()
+                products_ref = db.collection('products').where('author_id', '==', target_uid).order_by('created_at',
+                                                                                                       direction='DESCENDING').stream()
                 for doc in products_ref:
                     p = doc.to_dict()
                     p['id'] = doc.id
                     user_products.append(p)
             except Exception as e:
-                print(f"Index manquant ou erreur de tri : {e}")
-                # Fallback : On récupère les produits sans le tri pour éviter le crash
                 products_ref = db.collection('products').where('author_id', '==', target_uid).stream()
                 for doc in products_ref:
                     p = doc.to_dict()
                     p['id'] = doc.id
                     user_products.append(p)
-
             return render_template('profile.html', user=user_info, products=user_products)
-
         flash("Profil introuvable.", "danger")
         return redirect(url_for('index'))
     except Exception as global_e:
-        print(f"Erreur système profil : {global_e}")
         return "Erreur Interne du Serveur", 500
 
 
@@ -160,11 +162,8 @@ def set_session():
     if not user_doc.exists:
         role = 'user'
         user_ref.set({
-            'name': user_name,
-            'email': data.get('email'),
-            'photo': data.get('photo'),
-            'role': role,
-            'last_login': datetime.datetime.now()
+            'name': user_name, 'email': data.get('email'), 'photo': data.get('photo'),
+            'role': role, 'last_login': datetime.datetime.now()
         })
     else:
         role = user_doc.to_dict().get('role', 'user')
@@ -194,13 +193,9 @@ def panier():
 def a_propos():
     try:
         about_doc = db.collection('settings').document('about_us').get()
-        if about_doc.exists:
-            content = about_doc.to_dict()
-        else:
-            content = {"text": "Bienvenue sur Offranel Shop !"}
+        content = about_doc.to_dict() if about_doc.exists else {"text": "Bienvenue sur Offranel Shop !"}
         return render_template('a_propos.html', content=content)
     except Exception as e:
-        print(f"Erreur Page A Propos : {e}")
         return render_template('a_propos.html', content={"text": "Bienvenue sur Offranel Shop !"})
 
 
@@ -270,7 +265,6 @@ def edit_about():
     if session.get('role') != 'admin':
         flash("Accès refusé. Réservé aux administrateurs.", "danger")
         return redirect(url_for('index'))
-
     if request.method == 'POST':
         try:
             new_text = request.form.get('about_text')
@@ -278,18 +272,11 @@ def edit_about():
             flash("Page 'À propos' mise à jour avec succès !", "success")
             return redirect(url_for('a_propos'))
         except Exception as e:
-            print(f"Erreur Modification : {e}")
             flash("Erreur lors de la sauvegarde.", "danger")
             return redirect(url_for('index'))
-
-    try:
-        about_doc = db.collection('settings').document('about_us').get()
-        # On définit current_text même si le document n'existe pas
-        current_text = about_doc.to_dict().get('text', '') if about_doc.exists else ""
-        return render_template('edit_about.html', current_text=current_text)
-    except Exception as e:
-        print(f"Erreur chargement édition : {e}")
-        return redirect(url_for('index'))
+    about_doc = db.collection('settings').document('about_us').get()
+    current_text = about_doc.to_dict().get('text', '') if about_doc.exists else ""
+    return render_template('edit_about.html', current_text=current_text)
 
 
 @app.route('/publier', methods=['GET', 'POST'])
@@ -308,27 +295,21 @@ def publier():
                 'description': data.get('description'),
                 'images': data.get('images'),
                 'in_stock': True,
-                'author_id': session.get('user_id'),  # Stocke l'ID pour le lien profil
+                'author_id': session.get('user_id'),
                 'author_name': session.get('name'),
                 'author_photo': session.get('photo'),
                 'is_admin_post': True,
                 'created_at': datetime.datetime.now()
             })
-
             db.collection('notifications').add({
                 'id': str(datetime.datetime.now().timestamp()),
                 'title': "Nouvel arrivage ! 🍊",
                 'message': f"{data.get('title')} est maintenant disponible.",
                 'timestamp': datetime.datetime.now()
             })
-
-            trigger_push_notifications(
-                "OFFRANEL : Nouveau produit ! 🍊",
-                f"Découvrez : {data.get('title')}"
-            )
+            trigger_push_notifications("OFFRANEL : Nouveau produit ! 🍊", f"Découvrez : {data.get('title')}")
             return jsonify({"status": "success"})
         except Exception as e:
-            print(f"ERREUR PUBLICATION : {e}")
             return jsonify({"status": "error", "message": str(e)}), 500
     return render_template('publier.html', categories=CATEGORIES)
 

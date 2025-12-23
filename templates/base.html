@@ -97,8 +97,18 @@
         .bg-orange { background-color: var(--offranel-orange) !important; }
         .text-fb { color: var(--fb-blue) !important; }
 
-        /* --- NAVBAR --- */
-        .navbar { padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        /* --- NAVBAR AMÉLIORÉE (GLASSMORPHISM) --- */
+        .navbar {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        .navbar.scrolled {
+            background: rgba(255, 255, 255, 0.85) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
         .navbar-brand { font-size: 1.4rem; letter-spacing: 1px; }
 
         /* --- BOUTONS --- */
@@ -120,7 +130,7 @@
             border: 2px solid white;
         }
 
-        /* --- NOUVEAUTÉ : SEARCH BAR --- */
+        /* --- RECHERCHE --- */
         .search-container {
             max-width: 500px;
             margin: 0 auto;
@@ -129,6 +139,11 @@
             border-radius: 50px 0 0 50px !important;
             border: 1px solid #eee;
             padding-left: 20px;
+            transition: 0.3s;
+        }
+        .search-input:focus {
+            border-color: var(--offranel-orange);
+            box-shadow: none;
         }
         .search-btn {
             border-radius: 0 50px 50px 0 !important;
@@ -136,6 +151,24 @@
             color: white;
             border: none;
             padding: 0 20px;
+            transition: 0.3s;
+        }
+        .search-btn:hover { background: #e66000; }
+
+        /* --- INDICATEUR DE STATUT SUR PROFIL --- */
+        .profile-container {
+            position: relative;
+            display: inline-block;
+        }
+        .status-dot {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 10px;
+            height: 10px;
+            background-color: #22c55e;
+            border: 2px solid white;
+            border-radius: 50%;
         }
 
         /* --- COOKIE BANNER DESIGN --- */
@@ -192,7 +225,7 @@
     </div>
 </div>
 
-<nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm">
+<nav id="mainNavbar" class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm">
     <div class="container">
         <a class="navbar-brand fw-bold text-orange" href="/">
             <i class="fas fa-shopping-bag me-2"></i>OFFRANEL
@@ -239,7 +272,10 @@
 
                     <div class="dropdown mt-2 mt-lg-0">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" data-bs-toggle="dropdown">
-                            <img src="{{ session.get('photo') }}" class="rounded-circle border border-warning shadow-sm" width="38" height="38">
+                            <div class="profile-container">
+                                <img src="{{ session.get('photo') }}" class="rounded-circle border border-warning shadow-sm" width="38" height="38">
+                                <span class="status-dot"></span>
+                            </div>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 p-2 animate__animated animate__fadeIn">
                             {% if session.get('role') == 'admin' %}
@@ -307,10 +343,20 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+    // --- GESTION NAVBAR AU SCROLL ---
+    window.addEventListener('scroll', function() {
+        const nav = document.getElementById('mainNavbar');
+        if (window.scrollY > 40) {
+            nav.classList.add('scrolled');
+        } else {
+            nav.classList.remove('scrolled');
+        }
+    });
+
     // --- FONCTION ALERTE HAUTE PRIORITÉ (VIBRATION + NOTIF) ---
     function triggerAppAlert(title, message) {
         if ('vibrate' in navigator) {
-            navigator.vibrate([150, 50, 150]); // Double vibration style App
+            navigator.vibrate([150, 50, 150]);
         }
         if (Notification.permission === "granted") {
             new Notification(title, {
@@ -320,13 +366,12 @@
         }
     }
 
-    // --- LOGIQUE POP-UP D'ANNONCE (SYSTEMATIQUE) ---
+    // --- LOGIQUE POP-UP D'ANNONCE ---
     function checkAnnouncementPopup() {
         const isPopupActive = "{{ popup.active if popup else 'False' }}" === "True";
         const popupTitle = "{{ popup.title if popup else '' }}";
         const popupContent = "{{ popup.content if popup else '' }}";
 
-        // Suppression de la vérification localStorage pour afficher à CHAQUE connexion
         if (isPopupActive && popupTitle !== "") {
             const modalEl = document.getElementById('autoPopup');
             if (modalEl) {
@@ -346,8 +391,10 @@
     window.addEventListener('load', function() {
         const loader = document.getElementById('fb-loader-wrapper');
         setTimeout(() => {
-            loader.style.opacity = '0';
-            setTimeout(() => { loader.style.display = 'none'; }, 500);
+            if(loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => { loader.style.display = 'none'; }, 500);
+            }
         }, 1000);
     });
 
@@ -373,7 +420,6 @@
         });
     }
 
-    // --- LOGIQUE DES ALERTES TÉLÉPHONE ---
     const VAPID_PUBLIC_KEY = 'BOT0JEWz9-w_eTSqZXlLXewXXq4hT3zvWPFfyb68z-aH80OVc1oX2xvftH4d3rhQMKT5ibT8vkHK7vAIbaTq29Q';
 
     function urlBase64ToUint8Array(base64String) {
@@ -407,7 +453,6 @@
         navigator.serviceWorker.register('/sw.js').catch(err => console.log(err));
     }
 
-    // --- NOTIFICATIONS TEMPS RÉEL (ALERTE IMPORTANTE) ---
     async function checkNotifications() {
         try {
             const response = await fetch('/api/get_last_notif');
@@ -421,23 +466,19 @@
                     badge.innerText = "!";
                     badge.classList.remove('d-none');
                 }
-                // Déclencher l'alerte vibration/notif
                 triggerAppAlert("Nouvel Arrivage ! 🍊", data.message || "Un nouvel article est disponible.");
             }
         } catch(e) {}
     }
-    setInterval(checkNotifications, 30000); // Toutes les 30 sec
+    setInterval(checkNotifications, 30000);
 
-    // GESTION PANIER
     function updateCartBadge() {
         const cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
         const countElement = document.getElementById('cart-count');
         if(countElement) countElement.innerText = cart.length;
     }
 
-    // --- GESTION COOKIES (SESSION-BASED) ---
     function acceptCookies() {
-        // On utilise sessionStorage pour que ça s'affiche à chaque nouvelle connexion au compte/site
         sessionStorage.setItem("offranel_session_accepted", "true");
         const banner = document.getElementById("cookieBanner");
         if(banner) banner.style.display = "none";
@@ -451,16 +492,12 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         updateCartBadge();
-
-        // Cookies : Vérifie la session actuelle
         if (!sessionStorage.getItem("offranel_session_accepted")) {
             setTimeout(() => {
                 const banner = document.getElementById("cookieBanner");
                 if(banner) banner.style.display = "block";
             }, 1500);
         }
-
-        // Vérification systématique du Pop-up
         checkAnnouncementPopup();
     });
 </script>

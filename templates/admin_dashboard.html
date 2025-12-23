@@ -58,11 +58,11 @@
                 <div class="row g-3">
                     <div class="col-md-5">
                         <label class="form-label small fw-bold text-dark">Titre du Pop-up</label>
-                        <input type="text" id="adminPopTitle" class="form-control rounded-pill border-orange-light" value="{{ popup.title|default('') }}" placeholder="Ex: Promotion de Noël ! 🎄">
+                        <input type="text" id="adminPopTitle" class="form-control rounded-pill border-orange-light" value="{{ popup.title|default('')|forceescape }}" placeholder="Ex: Promotion de Noël ! 🎄">
                     </div>
                     <div class="col-md-7">
                         <label class="form-label small fw-bold text-dark">Message / Contenu</label>
-                        <textarea id="adminPopContent" class="form-control rounded-4 border-orange-light" rows="2" placeholder="Écrivez votre message ici...">{{ popup.content|default('') }}</textarea>
+                        <textarea id="adminPopContent" class="form-control rounded-4 border-orange-light" rows="2" placeholder="Écrivez votre message ici...">{{ popup.content|default('')|forceescape }}</textarea>
                     </div>
                 </div>
 
@@ -121,6 +121,7 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>...';
 
+        // En récupérant .value via JS, les apostrophes sont gérées nativement.
         const data = {
             title: document.getElementById('adminPopTitle').value,
             content: document.getElementById('adminPopContent').value,
@@ -131,6 +132,7 @@
             const res = await fetch('/admin/update_popup', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
+                // JSON.stringify échappe automatiquement les caractères spéciaux pour le transfert
                 body: JSON.stringify(data)
             });
             if (res.ok) {
@@ -177,12 +179,11 @@
             });
         }
 
-        // Simulation des utilisateurs actifs
         setInterval(() => {
             const el = document.getElementById('active-count');
             if(el) {
                 let current = parseInt(el.innerText);
-                let change = Math.floor(Math.random() * 3) - 1; // -1, 0 ou 1
+                let change = Math.floor(Math.random() * 3) - 1;
                 el.innerText = Math.max(1, current + change);
             }
         }, 8000);

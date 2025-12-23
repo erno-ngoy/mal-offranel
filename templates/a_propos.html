@@ -1,34 +1,99 @@
 {% extends 'base.html' %}
-{% block content %}
-<div class="container mt-5 animate__animated animate__fadeIn">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-                <div class="p-4 text-white text-center" style="background-color: #FF6B00;">
-                    <h3 class="fw-bold mb-0"><i class="fas fa-edit me-2"></i>Modifier le contenu</h3>
-                </div>
-                <div class="card-body p-4 p-md-5 bg-white">
-                    <form action="/admin/modifier-a-propos" method="POST">
-                        <div class="mb-4">
-                            <label class="form-label fw-bold text-muted">TEXTE DE LA PAGE À PROPOS</label>
-                            <textarea name="about_text" class="form-control rounded-3 border-light shadow-sm" rows="12" style="resize: none; background-color: #fdfdfd;">{{ current_text }}</textarea>
-                        </div>
 
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-orange py-3 rounded-pill fw-bold shadow-sm">
-                                <i class="fas fa-save me-2"></i> Enregistrer les modifications
-                            </button>
-                            <a href="/a-propos" class="btn btn-light py-2 rounded-pill text-muted">Annuler</a>
-                        </div>
-                    </form>
+{% block content %}
+<div class="container mt-4 animate__animated animate__fadeIn">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 25px; overflow: hidden;">
+                <div class="p-4 p-md-5 bg-white">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="fw-bold text-orange mb-0">
+                            <i class="fas fa-store me-2"></i>Qui sommes-nous ?
+                        </h2>
+                        {% if session.get('role') == 'admin' %}
+                        <a href="/admin/modifier-a-propos" class="btn btn-sm btn-outline-orange rounded-pill">
+                            <i class="fas fa-pen me-1"></i> Éditer
+                        </a>
+                        {% endif %}
+                    </div>
+
+                    <div class="fs-5 text-dark lh-base">
+                        {% if content and content.text %}
+                            {{ content.text | safe | replace('\n', '<br>') }}
+                        {% else %}
+                            <p>Nous espérons que vous allez bien ! Nous sommes ravis de vous présenter notre boutique en ligne, où vous trouverez une large sélection d'articles, en particulier des accessoires tendance. N'hésitez pas à passer vos commandes, nous sommes là pour vous satisfaire ! 🍊</p>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
+
+            <div class="card border-0 shadow-sm" style="border-radius: 25px; background: #fffcf9; border: 1px solid rgba(255, 107, 0, 0.1);">
+                <div class="card-body p-4 p-md-5">
+                    <h3 class="fw-bold text-dark mb-4"><i class="fas fa-user-shield text-orange me-2"></i>Confidentialité & Règles</h3>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="d-flex">
+                                <i class="fas fa-check-circle text-orange mt-1 me-3"></i>
+                                <div>
+                                    <h6 class="fw-bold mb-1">Protection des données</h6>
+                                    <p class="small text-muted">Vos informations personnelles (nom, photo, email) sont utilisées exclusivement pour la gestion de votre compte Offranel.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex">
+                                <i class="fas fa-check-circle text-orange mt-1 me-3"></i>
+                                <div>
+                                    <h6 class="fw-bold mb-1">Sécurité des transactions</h6>
+                                    <p class="small text-muted">Nous ne stockons aucune information bancaire. Les échanges se font directement avec l'administration pour garantir votre sécurité.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex">
+                                <i class="fas fa-check-circle text-orange mt-1 me-3"></i>
+                                <div>
+                                    <h6 class="fw-bold mb-1">Utilisation des Cookies</h6>
+                                    <p class="small text-muted">Nous utilisons des cookies uniquement pour mémoriser votre panier et votre session de connexion.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex">
+                                <i class="fas fa-check-circle text-orange mt-1 me-3"></i>
+                                <div>
+                                    <h6 class="fw-bold mb-1">Transparence</h6>
+                                    <p class="small text-muted">Offranel Shop s'engage à ne jamais revendre vos données à des tiers ou à des régies publicitaires.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning mt-4 border-0 rounded-4 p-3 mb-0" style="background-color: rgba(255, 107, 0, 0.05);">
+                        <p class="small mb-0 text-orange">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            En utilisant notre plateforme, vous acceptez que vos commandes soient traitées par notre équipe logistique pour assurer la livraison.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="/" class="btn btn-orange px-4 rounded-pill shadow-sm">Retourner à la boutique</a>
+            </div>
+
         </div>
     </div>
 </div>
 
 <style>
+    .text-orange { color: #FF6B00 !important; }
     .btn-orange { background-color: #FF6B00; color: white; border: none; }
-    .btn-orange:hover { background-color: #e66000; color: white; }
+    .btn-orange:hover { background-color: #e66000; color: white; transform: translateY(-2px); }
+    .btn-outline-orange { color: #FF6B00; border: 1px solid #FF6B00; }
+    .btn-outline-orange:hover { background-color: #FF6B00; color: white; }
+    .lh-base { line-height: 1.8 !important; }
 </style>
 {% endblock %}

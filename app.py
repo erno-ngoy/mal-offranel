@@ -192,9 +192,16 @@ def panier():
 
 @app.route('/a-propos')
 def a_propos():
-    about_doc = db.collection('settings').document('about_us').get()
-    content = about_doc.to_dict() if about_doc.exists else {"text": "Bienvenue sur Offranel Shop !"}
-    return render_template('a_propos.html', content=content)
+    try:
+        about_doc = db.collection('settings').document('about_us').get()
+        if about_doc.exists:
+            content = about_doc.to_dict()
+        else:
+            content = {"text": "Bienvenue sur Offranel Shop !"}
+        return render_template('a_propos.html', content=content)
+    except Exception as e:
+        print(f"Erreur Page A Propos : {e}")
+        return render_template('a_propos.html', content={"text": "Bienvenue sur Offranel Shop !"})
 
 
 @app.route('/api/get_popup')
@@ -261,15 +268,28 @@ def update_popup():
 @login_required
 def edit_about():
     if session.get('role') != 'admin':
+        flash("Accès refusé. Réservé aux administrateurs.", "danger")
         return redirect(url_for('index'))
+
     if request.method == 'POST':
-        new_text = request.form.get('about_text')
-        db.collection('settings').document('about_us').set({"text": new_text})
-        flash("Page 'À propos' mise à jour !", "success")
-        return redirect(url_for('a_propos'))
-    about_doc = db.collection('settings').document('about_us').get()
-    current_text = about_doc.to_dict().get('text', '') if about_doc.exists else ""
-    return render_template('edit_about.html', current_text=current_text)
+        try:
+            new_text = request.form.get('about_text')
+            db.collection('settings').document('about_us').set({"text": new_text})
+            flash("Page 'À propos' mise à jour avec succès !", "success")
+            return redirect(url_for('a_propos'))
+        except Exception as e:
+            print(f"Erreur Modification : {e}")
+            flash("Erreur lors de la sauvegarde.", "danger")
+            return redirect(url_for('index'))
+
+    try:
+        about_doc = db.collection('settings').document('about_us').get()
+        # On définit current_text même si le document n'existe pas
+        current_text = about_doc.to_dict().get('text', '') if about_doc.exists else ""
+        return render_template('edit_about.html', current_text=current_text)
+    except Exception as e:
+        print(f"Erreur chargement édition : {e}")
+        return redirect(url_for('index'))
 
 
 @app.route('/publier', methods=['GET', 'POST'])

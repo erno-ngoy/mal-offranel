@@ -28,26 +28,40 @@
             --offranel-dark: #1A1A1A;
             --glass-bg: rgba(255, 255, 255, 0.9);
             --fb-blue: #1877F2;
+            /* Couleurs dynamiques */
+            --bg-body: #f8f9fa;
+            --text-color: #1A1A1A;
+            --nav-bg: #ffffff;
+            --card-bg: #ffffff;
+            --input-bg: #ffffff;
+            --border-color: rgba(0,0,0,0.05);
+        }
+
+        /* --- MODE SOMBRE --- */
+        [data-theme="dark"] {
+            --bg-body: #121212;
+            --text-color: #f1f1f1;
+            --nav-bg: #1e1e1e;
+            --card-bg: #242424;
+            --input-bg: #2c2c2c;
+            --glass-bg: rgba(30, 30, 30, 0.85);
+            --border-color: rgba(255,255,255,0.1);
         }
 
         body {
-            background-color: #f8f9fa;
+            background-color: var(--bg-body);
+            color: var(--text-color);
             font-family: 'Poppins', sans-serif;
             overflow-x: hidden;
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
-        /* --- STYLE DU CHARGEMENT (FB LITE STYLE) --- */
+        /* --- STYLE DU CHARGEMENT --- */
         #fb-loader-wrapper {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 99999;
         }
 
@@ -59,92 +73,70 @@
         }
 
         .fb-lite-spinner {
-            width: 26px;
-            height: 26px;
+            width: 26px; height: 26px;
             border: 3px solid #f3f3f3;
             border-top: 3px solid var(--offranel-orange);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
 
-        .from-malaki-container {
-            position: absolute;
-            bottom: 40px;
-            text-align: center;
-        }
-
-        .from-text {
-            font-size: 13px;
-            color: #8a8d91;
-            margin-bottom: 2px;
-            display: block;
-        }
-
+        .from-malaki-container { position: absolute; bottom: 40px; text-align: center; }
+        .from-text { font-size: 13px; color: #8a8d91; margin-bottom: 2px; display: block; }
         .malaki-text {
             font-family: 'Arial Rounded MT Bold', 'Helvetica Rounded', Arial, sans-serif;
-            font-size: 18px;
-            font-weight: bold;
-            color: var(--offranel-orange);
-            letter-spacing: 1px;
+            font-size: 18px; font-weight: bold; color: var(--offranel-orange); letter-spacing: 1px;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .text-orange { color: var(--offranel-orange) !important; }
         .bg-orange { background-color: var(--offranel-orange) !important; }
         .text-fb { color: var(--fb-blue) !important; }
 
-        /* --- NAVBAR AMÉLIORÉE (GLASSMORPHISM) --- */
+        /* --- NAVBAR --- */
         .navbar {
             padding: 12px 0;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
+            background-color: var(--nav-bg) !important;
+            border-bottom: 1px solid var(--border-color);
             transition: all 0.3s ease;
         }
         .navbar.scrolled {
-            background: rgba(255, 255, 255, 0.85) !important;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            background: var(--glass-bg) !important;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
         .navbar-brand { font-size: 1.4rem; letter-spacing: 1px; }
+        .nav-link { color: var(--text-color) !important; }
+
+        /* --- BOUTON THEME --- */
+        .theme-btn {
+            cursor: pointer;
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%;
+            margin-right: 10px;
+            transition: 0.3s;
+        }
+        .theme-btn:hover { background: rgba(255, 107, 0, 0.1); }
 
         /* --- BOUTONS --- */
         .btn-orange {
             background-color: var(--offranel-orange);
-            color: white;
-            border-radius: 50px;
-            font-weight: 600;
-            padding: 10px 24px;
-            border: none;
-            transition: 0.3s;
+            color: white; border-radius: 50px; font-weight: 600; padding: 10px 24px; border: none; transition: 0.3s;
         }
         .btn-orange:hover { background-color: #e66000; color: white; transform: translateY(-2px); }
 
         /* --- PANIER & NOTIF BADGE --- */
-        .cart-badge, .notif-badge {
-            font-size: 0.65rem;
-            padding: 4px 6px;
-            border: 2px solid white;
-        }
+        .cart-badge, .notif-badge { font-size: 0.65rem; padding: 4px 6px; border: 2px solid white; }
 
-        /* --- NOUVELLES ANIMATIONS --- */
-        .notif-badge:not(.d-none) {
-            animation: pulse-red 2s infinite;
-        }
-
+        .notif-badge:not(.d-none) { animation: pulse-red 2s infinite; }
         @keyframes pulse-red {
             0% { transform: translate(100%, -50%) scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
             70% { transform: translate(100%, -50%) scale(1.2); box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
             100% { transform: translate(100%, -50%) scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
         }
 
-        .cart-bounce {
-            animation: cartJump 0.5s ease-in-out;
-        }
-
+        .cart-bounce { animation: cartJump 0.5s ease-in-out; }
         @keyframes cartJump {
             0% { transform: scale(1); }
             30% { transform: scale(1.4) rotate(-10deg); }
@@ -153,64 +145,36 @@
         }
 
         /* --- RECHERCHE --- */
-        .search-container {
-            max-width: 500px;
-            margin: 0 auto;
-        }
+        .search-container { max-width: 500px; margin: 0 auto; }
         .search-input {
             border-radius: 50px 0 0 50px !important;
-            border: 1px solid #eee;
-            padding-left: 20px;
-            transition: 0.3s;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding-left: 20px; transition: 0.3s;
         }
-        .search-input:focus {
-            border-color: var(--offranel-orange);
-            box-shadow: none;
-        }
+        .search-input:focus { border-color: var(--offranel-orange); box-shadow: none; outline: none; }
         .search-btn {
             border-radius: 0 50px 50px 0 !important;
-            background: var(--offranel-orange);
-            color: white;
-            border: none;
-            padding: 0 20px;
-            transition: 0.3s;
+            background: var(--offranel-orange); color: white; border: none; padding: 0 20px; transition: 0.3s;
         }
-        .search-btn:hover { background: #e66000; }
 
-        /* --- INDICATEUR DE STATUT SUR PROFIL --- */
-        .profile-container {
-            position: relative;
-            display: inline-block;
-        }
+        /* --- PROFIL --- */
+        .profile-container { position: relative; display: inline-block; }
         .status-dot {
-            position: absolute;
-            bottom: 2px;
-            right: 2px;
-            width: 10px;
-            height: 10px;
-            background-color: #22c55e;
-            border: 2px solid white;
-            border-radius: 50%;
+            position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px;
+            background-color: #22c55e; border: 2px solid white; border-radius: 50%;
         }
 
-        /* --- COOKIE BANNER DESIGN --- */
-        .cookie-banner {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            z-index: 9999;
-            display: none;
-        }
+        /* --- COOKIE BANNER --- */
+        .cookie-banner { position: fixed; bottom: 20px; left: 20px; right: 20px; z-index: 9999; display: none; }
         .glass-cookie {
-            background: var(--glass-bg);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 107, 0, 0.2);
-            border-radius: 24px;
-            padding: 20px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            background: var(--glass-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 107, 0, 0.2); border-radius: 24px; padding: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1);
         }
+
+        /* Ajustement modal mode sombre */
+        .modal-content { background-color: var(--card-bg); color: var(--text-color); }
 
         @media (max-width: 576px) {
             .navbar-brand { font-size: 1.2rem; }
@@ -247,13 +211,17 @@
     </div>
 </div>
 
-<nav id="mainNavbar" class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm">
+<nav id="mainNavbar" class="navbar navbar-expand-lg sticky-top shadow-sm">
     <div class="container">
         <a class="navbar-brand fw-bold text-orange" href="/">
             <i class="fas fa-shopping-bag me-2"></i>OFFRANEL
         </a>
 
         <div class="d-flex align-items-center order-lg-3">
+            <div id="theme-toggle" class="theme-btn">
+                <i class="fas fa-moon fa-lg"></i>
+            </div>
+
             <a href="#" class="nav-link position-relative me-3" id="notif-link">
                 <i class="fas fa-bell fa-lg"></i>
                 <span id="notif-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notif-badge d-none">
@@ -365,6 +333,25 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+    // --- GESTION DU THEME (SOMBRE/CLAIR) ---
+    const themeBtn = document.getElementById('theme-toggle');
+    const themeIcon = themeBtn.querySelector('i');
+
+    function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('offranel_theme', theme);
+        themeIcon.className = theme === 'dark' ? 'fas fa-sun fa-lg' : 'fas fa-moon fa-lg';
+    }
+
+    themeBtn.addEventListener('click', () => {
+        const current = document.documentElement.getAttribute('data-theme');
+        setTheme(current === 'dark' ? 'light' : 'dark');
+    });
+
+    // Appliquer le thème au chargement
+    const savedTheme = localStorage.getItem('offranel_theme') || 'light';
+    setTheme(savedTheme);
+
     // --- GESTION NAVBAR AU SCROLL ---
     window.addEventListener('scroll', function() {
         const nav = document.getElementById('mainNavbar');
@@ -375,30 +362,22 @@
         }
     });
 
-    // --- FONCTION ANIMATION PANIER ---
     function animateCart() {
         const cartWrapper = document.getElementById('cart-icon-wrapper');
         if(cartWrapper) {
             cartWrapper.classList.remove('cart-bounce');
-            void cartWrapper.offsetWidth; // Force reflow
+            void cartWrapper.offsetWidth;
             cartWrapper.classList.add('cart-bounce');
         }
     }
 
-    // --- FONCTION ALERTE HAUTE PRIORITÉ (VIBRATION + NOTIF) ---
     function triggerAppAlert(title, message) {
-        if ('vibrate' in navigator) {
-            navigator.vibrate([150, 50, 150]);
-        }
+        if ('vibrate' in navigator) { navigator.vibrate([150, 50, 150]); }
         if (Notification.permission === "granted") {
-            new Notification(title, {
-                body: message,
-                icon: "/static/img/image.png"
-            });
+            new Notification(title, { body: message, icon: "/static/img/image.png" });
         }
     }
 
-    // --- LOGIQUE POP-UP D'ANNONCE ---
     function checkAnnouncementPopup() {
         const isPopupActive = "{{ popup.active if popup else 'False' }}" === "True";
         const popupTitle = "{{ popup.title if popup else '' }}";
@@ -409,7 +388,6 @@
             if (modalEl) {
                 document.getElementById('pTitle').innerText = popupTitle;
                 document.getElementById('pContent').innerText = popupContent;
-
                 const myModal = new bootstrap.Modal(modalEl);
                 setTimeout(() => {
                     myModal.show();
@@ -419,7 +397,6 @@
         }
     }
 
-    // MASQUER LOADER
     window.addEventListener('load', function() {
         const loader = document.getElementById('fb-loader-wrapper');
         setTimeout(() => {
@@ -430,7 +407,7 @@
         }, 1000);
     });
 
-    // PWA INSTALL LOGIC
+    // PWA & PUSH (VOTRE LOGIQUE)
     let deferredPrompt;
     const installBanner = document.getElementById('pwa-install-banner');
     const installBtn = document.getElementById('btn-install-pwa');
@@ -445,40 +422,11 @@
         installBtn.addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
+                await deferredPrompt.userChoice;
                 deferredPrompt = null;
                 installBanner.style.display = 'none';
             }
         });
-    }
-
-    const VAPID_PUBLIC_KEY = 'BOT0JEWz9-w_eTSqZXlLXewXXq4hT3zvWPFfyb68z-aH80OVc1oX2xvftH4d3rhQMKT5ibT8vkHK7vAIbaTq29Q';
-
-    function urlBase64ToUint8Array(base64String) {
-        const padding = '='.repeat((4 - base64String.length % 4) % 4);
-        const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-        const rawData = window.atob(base64);
-        return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
-    }
-
-    async function subscribeToPush() {
-        if ('serviceWorker' in navigator) {
-            try {
-                const registration = await navigator.serviceWorker.ready;
-                const subscription = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-                });
-
-                await fetch('/api/save-subscription', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(subscription)
-                });
-            } catch (err) {
-                console.error("Erreur d'abonnement push:", err);
-            }
-        }
     }
 
     if ('serviceWorker' in navigator) {
@@ -504,7 +452,6 @@
     }
     setInterval(checkNotifications, 30000);
 
-    // GESTION PANIER AVEC ANIMATION
     let lastCartLength = (JSON.parse(localStorage.getItem('offranel_cart')) || []).length;
 
     function updateCartBadge() {
@@ -512,9 +459,7 @@
         const countElement = document.getElementById('cart-count');
         if(countElement) {
             countElement.innerText = cart.length;
-            if(cart.length > lastCartLength) {
-                animateCart();
-            }
+            if(cart.length > lastCartLength) { animateCart(); }
             lastCartLength = cart.length;
         }
     }
@@ -523,12 +468,7 @@
         sessionStorage.setItem("offranel_session_accepted", "true");
         const banner = document.getElementById("cookieBanner");
         if(banner) banner.style.display = "none";
-
-        Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-                subscribeToPush();
-            }
-        });
+        Notification.requestPermission();
     }
 
     document.addEventListener("DOMContentLoaded", () => {

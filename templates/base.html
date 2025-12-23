@@ -307,6 +307,29 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+    // --- NOUVEAU : LOGIQUE POP-UP D'ANNONCE ---
+    function checkAnnouncementPopup() {
+        const isPopupActive = "{{ popup.active if popup else 'False' }}" === "True";
+        const popupTitle = "{{ popup.title if popup else '' }}";
+        const popupContent = "{{ popup.content if popup else '' }}";
+        const lastSeenPopup = localStorage.getItem('offranel_popup_seen');
+
+        // On affiche si c'est actif ET si le titre a changé (nouvelle annonce)
+        if (isPopupActive && popupTitle !== "" && lastSeenPopup !== popupTitle) {
+            const modalEl = document.getElementById('autoPopup');
+            if (modalEl) {
+                document.getElementById('pTitle').innerText = popupTitle;
+                document.getElementById('pContent').innerText = popupContent;
+
+                const myModal = new bootstrap.Modal(modalEl);
+                setTimeout(() => {
+                    myModal.show();
+                    localStorage.setItem('offranel_popup_seen', popupTitle);
+                }, 3000); // Délai de 3s après le chargement
+            }
+        }
+    }
+
     // MASQUER LOADER
     window.addEventListener('load', function() {
         const loader = document.getElementById('fb-loader-wrapper');
@@ -324,17 +347,19 @@
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        installBanner.style.display = 'block';
+        if(installBanner) installBanner.style.display = 'block';
     });
 
-    installBtn.addEventListener('click', async () => {
-        if (deferredPrompt) {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            deferredPrompt = null;
-            installBanner.style.display = 'none';
-        }
-    });
+    if(installBtn) {
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                installBanner.style.display = 'none';
+            }
+        });
+    }
 
     // --- AJOUT : LOGIQUE DES ALERTES TÉLÉPHONE ---
     const VAPID_PUBLIC_KEY = 'BOT0JEWz9-w_eTSqZXlLXewXXq4hT3zvWPFfyb68z-aH80OVc1oX2xvftH4d3rhQMKT5ibT8vkHK7vAIbaTq29Q';
@@ -348,15 +373,13 @@
 
     async function subscribeToPush() {
         if ('serviceWorker' in navigator) {
-            const registration = await navigator.serviceWorker.ready;
-
             try {
+                const registration = await navigator.serviceWorker.ready;
                 const subscription = await registration.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
                 });
 
-                // Envoyer l'abonnement au serveur Flask
                 await fetch('/api/save-subscription', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -374,7 +397,7 @@
         navigator.serviceWorker.register('/sw.js').catch(err => console.log(err));
     }
 
-    // NOTIFICATIONS SYSTEM (Simulation après action)
+    // NOTIFICATIONS SYSTEM
     async function checkNotifications() {
         try {
             const response = await fetch('/api/get_last_notif');
@@ -383,8 +406,10 @@
 
             if (data.id && data.id != lastId) {
                 const badge = document.getElementById('notif-count');
-                badge.innerText = "!";
-                badge.classList.remove('d-none');
+                if(badge) {
+                    badge.innerText = "!";
+                    badge.classList.remove('d-none');
+                }
             }
         } catch(e) {}
     }
@@ -399,8 +424,9 @@
 
     function acceptCookies() {
         localStorage.setItem("offranel_cookies_accepted", "true");
-        document.getElementById("cookieBanner").style.display = "none";
-        // On demande la permission pour les alertes réelles
+        const banner = document.getElementById("cookieBanner");
+        if(banner) banner.style.display = "none";
+
         Notification.requestPermission().then(permission => {
             if (permission === 'granted') {
                 subscribeToPush();
@@ -410,9 +436,17 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         updateCartBadge();
+
+        // Affichage des cookies si non acceptés
         if (!localStorage.getItem("offranel_cookies_accepted")) {
-            setTimeout(() => { document.getElementById("cookieBanner").style.display = "block"; }, 2000);
+            setTimeout(() => {
+                const banner = document.getElementById("cookieBanner");
+                if(banner) banner.style.display = "block";
+            }, 2000);
         }
+
+        // Vérification de l'annonce Pop-up
+        checkAnnouncementPopup();
     });
 </script>
 </body>

@@ -13,7 +13,7 @@
     <meta name="apple-mobile-web-app-title" content="OFFRANEL">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/index.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <link rel="icon" type="image/png" href="/static/img/image.png">
     <link rel="apple-touch-icon" href="/static/img/images.png">
@@ -297,8 +297,9 @@
             <div class="modal-body py-4 text-center">
                 <p id="pContent" class="fs-5 text-muted"></p>
             </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-orange w-100 rounded-pill py-2 fw-bold" data-bs-dismiss="modal">OK, FERMER</button>
+            <div class="modal-footer border-0 flex-column gap-2">
+                <button type="button" class="btn btn-orange w-100 rounded-pill py-2 fw-bold" data-bs-dismiss="modal">OK, COMPRIS</button>
+                <button type="button" class="btn btn-light w-100 rounded-pill py-2 text-muted small" onclick="disablePopupForSession()" data-bs-dismiss="modal">Annuler l'affichage</button>
             </div>
         </div>
     </div>
@@ -307,10 +308,15 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+    // --- FONCTIONS POP-UP ANNULATION ---
+    function disablePopupForSession() {
+        sessionStorage.setItem("offranel_popup_disabled", "true");
+    }
+
     // --- FONCTION ALERTE HAUTE PRIORITÉ (VIBRATION + NOTIF) ---
     function triggerAppAlert(title, message) {
         if ('vibrate' in navigator) {
-            navigator.vibrate([150, 50, 150]); // Double vibration style App
+            navigator.vibrate([150, 50, 150]);
         }
         if (Notification.permission === "granted") {
             new Notification(title, {
@@ -320,13 +326,18 @@
         }
     }
 
-    // --- LOGIQUE POP-UP D'ANNONCE (SYSTEMATIQUE) ---
+    // --- LOGIQUE POP-UP D'ANNONCE (ACCUEIL UNIQUEMENT + ANNULABLE) ---
     function checkAnnouncementPopup() {
+        const isHomePage = window.location.pathname === "/";
+        const isPopupDisabled = sessionStorage.getItem("offranel_popup_disabled") === "true";
+
+        // On ne lance le pop-up que sur l'accueil et s'il n'a pas été annulé pour cette session
+        if (!isHomePage || isPopupDisabled) return;
+
         const isPopupActive = "{{ popup.active if popup else 'False' }}" === "True";
         const popupTitle = "{{ popup.title if popup else '' }}";
         const popupContent = "{{ popup.content if popup else '' }}";
 
-        // Suppression de la vérification localStorage pour afficher à CHAQUE connexion
         if (isPopupActive && popupTitle !== "") {
             const modalEl = document.getElementById('autoPopup');
             if (modalEl) {
@@ -373,7 +384,6 @@
         });
     }
 
-    // --- LOGIQUE DES ALERTES TÉLÉPHONE ---
     const VAPID_PUBLIC_KEY = 'BOT0JEWz9-w_eTSqZXlLXewXXq4hT3zvWPFfyb68z-aH80OVc1oX2xvftH4d3rhQMKT5ibT8vkHK7vAIbaTq29Q';
 
     function urlBase64ToUint8Array(base64String) {
@@ -407,7 +417,6 @@
         navigator.serviceWorker.register('/sw.js').catch(err => console.log(err));
     }
 
-    // --- NOTIFICATIONS TEMPS RÉEL (ALERTE IMPORTANTE) ---
     async function checkNotifications() {
         try {
             const response = await fetch('/api/get_last_notif');
@@ -421,23 +430,19 @@
                     badge.innerText = "!";
                     badge.classList.remove('d-none');
                 }
-                // Déclencher l'alerte vibration/notif
                 triggerAppAlert("Nouvel Arrivage ! 🍊", data.message || "Un nouvel article est disponible.");
             }
         } catch(e) {}
     }
-    setInterval(checkNotifications, 30000); // Toutes les 30 sec
+    setInterval(checkNotifications, 30000);
 
-    // GESTION PANIER
     function updateCartBadge() {
         const cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
         const countElement = document.getElementById('cart-count');
         if(countElement) countElement.innerText = cart.length;
     }
 
-    // --- GESTION COOKIES (SESSION-BASED) ---
     function acceptCookies() {
-        // On utilise sessionStorage pour que ça s'affiche à chaque nouvelle connexion au compte/site
         sessionStorage.setItem("offranel_session_accepted", "true");
         const banner = document.getElementById("cookieBanner");
         if(banner) banner.style.display = "none";
@@ -452,15 +457,16 @@
     document.addEventListener("DOMContentLoaded", () => {
         updateCartBadge();
 
-        // Cookies : Vérifie la session actuelle
-        if (!sessionStorage.getItem("offranel_session_accepted")) {
+        const isHomePage = window.location.pathname === "/";
+
+        // Cookies : Uniquement sur l'accueil
+        if (isHomePage && !sessionStorage.getItem("offranel_session_accepted")) {
             setTimeout(() => {
                 const banner = document.getElementById("cookieBanner");
                 if(banner) banner.style.display = "block";
             }, 1500);
         }
 
-        // Vérification systématique du Pop-up
         checkAnnouncementPopup();
     });
 </script>

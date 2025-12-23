@@ -26,7 +26,7 @@
                 <hr>
                 <div class="d-flex justify-content-between mb-4">
                     <span class="fw-bold">Total Estimé</span>
-                    <h4 class="fw-bold text-orange" id="total-price">0 $</h4>
+                    <h4 class="fw-bold text-orange text-end" id="total-price">0 $</h4>
                 </div>
 
                 <button onclick="checkout()" class="btn btn-orange w-100 py-3 fw-bold rounded-pill shadow-sm mb-3">
@@ -46,15 +46,13 @@
 
 <script>
     const CART_KEY = 'offranel_cart';
+    const TAUX_ECHANGE = 2850; // MODIFIEZ ICI : 1$ = 2850 FC
 
     function renderCart() {
         const cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
         const list = document.getElementById('cart-list');
         const totalPriceEl = document.getElementById('total-price');
         const countEl = document.getElementById('cart-count-summary');
-
-        let total = 0;
-        let currency = "$";
 
         if (cart.length === 0) {
             list.innerHTML = `
@@ -69,9 +67,17 @@
             return;
         }
 
+        let totalUSD = 0;
+        let totalFC = 0;
+
         list.innerHTML = cart.map((item, index) => {
-            total += parseFloat(item.price);
-            currency = item.currency || "$";
+            const price = parseFloat(item.price) || 0;
+            if (item.currency === "FC") {
+                totalFC += price;
+            } else {
+                totalUSD += price;
+            }
+
             return `
                 <div class="card mb-3 p-3 border-0 shadow-sm rounded-4 animate__animated animate__fadeInUp">
                     <div class="d-flex align-items-center">
@@ -90,7 +96,18 @@
             `;
         }).join('');
 
-        totalPriceEl.innerText = `${total} ${currency}`;
+        // Calcul de la conversion
+        let conversionUSD = totalUSD + (totalFC / TAUX_ECHANGE);
+        let conversionFC = totalFC + (totalUSD * TAUX_ECHANGE);
+
+        totalPriceEl.innerHTML = `
+            <div class="animate__animated animate__fadeIn">
+                <span class="d-block">${conversionUSD.toFixed(2)} $</span>
+                <small class="text-muted fw-normal d-block" style="font-size: 0.75rem;">
+                    soit ${conversionFC.toLocaleString()} FC
+                </small>
+            </div>
+        `;
         countEl.innerText = cart.length;
     }
 
@@ -109,26 +126,29 @@
         const cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
         if (cart.length === 0) return alert("Votre panier est vide !");
 
-        // --- GÉNÉRATION DU BON DE COMMANDE PRO ---
         let message = "🚀 *NOUVELLE COMMANDE - OFFRANEL SHOP*\n";
         message += "----------------------------------------\n\n";
 
-        let total = 0;
-        let currency = "";
+        let totalUSD = 0;
+        let totalFC = 0;
 
         cart.forEach((item, i) => {
             message += `📦 *Article ${i+1}:* ${item.title}\n`;
             message += `💰 *Prix:* ${item.price} ${item.currency}\n`;
-            message += `🔗 *Lien:* ${window.location.origin}/produit/${item.id}\n`;
             message += `----------------------------------------\n`;
-            total += parseFloat(item.price);
-            currency = item.currency;
+
+            const p = parseFloat(item.price) || 0;
+            if (item.currency === "FC") totalFC += p; else totalUSD += p;
         });
 
-        message += `\n💵 *TOTAL À PAYER : ${total} ${currency}*`;
-        message += `\n\n👤 *Client :* {{ session.get('name') }}`;
-        message += `\n📅 *Date :* ${new Date().toLocaleDateString('fr-FR')}`;
-        message += `\n\n_Veuillez confirmer la disponibilité de ces articles pour la livraison._`;
+        let finalUSD = totalUSD + (totalFC / TAUX_ECHANGE);
+        let finalFC = totalFC + (totalUSD * TAUX_ECHANGE);
+
+        message += `\n💵 *TOTAL ESTIMÉ :*\n`;
+        message += `👉 *${finalUSD.toFixed(2)} USD*\n`;
+        message += `👉 *${finalFC.toLocaleString()} FC*\n\n`;
+        message += `👤 *Client :* {{ session.get('name') }}\n`;
+        message += `📍 _Taux : 1$ = ${TAUX_ECHANGE} FC_`;
 
         const encodedMessage = encodeURIComponent(message);
         const whatsappNumber = "243828035654";

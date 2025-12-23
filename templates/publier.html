@@ -16,11 +16,9 @@
                         <label class="small fw-bold">Catégorie</label>
                         <select id="category" class="form-select rounded-pill border-orange" required>
                             <option value="" selected disabled>Choisir...</option>
-                            <option value="Chaussures">👟 Chaussures</option>
-                            <option value="Vêtements">👕 Vêtements</option>
-                            <option value="Montres">⌚ Montres</option>
-                            <option value="Accessoires">👜 Accessoires</option>
-                            <option value="Électronique">📱 Électronique</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div class="col-md-4 col-7 mb-3">

@@ -464,17 +464,25 @@
         }
     }
 
+    // --- CORRECTION : UTILISATION DE LOCALSTORAGE POUR AFFICHAGE UNIQUE ---
     function acceptCookies() {
-        sessionStorage.setItem("offranel_session_accepted", "true");
+        // Changement : On utilise localStorage pour que ce soit permanent
+        localStorage.setItem("offranel_notif_banner_seen", "true");
         const banner = document.getElementById("cookieBanner");
-        if(banner) banner.style.display = "none";
+        if(banner) {
+            banner.classList.remove('animate__fadeInUp');
+            banner.classList.add('animate__fadeOutDown');
+            setTimeout(() => { banner.style.display = "none"; }, 500);
+        }
         Notification.requestPermission();
     }
 
     document.addEventListener("DOMContentLoaded", () => {
         updateCartBadge();
         window.addEventListener('storage', updateCartBadge);
-        if (!sessionStorage.getItem("offranel_session_accepted")) {
+
+        // Changement : On vérifie localStorage au lieu de sessionStorage
+        if (!localStorage.getItem("offranel_notif_banner_seen")) {
             setTimeout(() => {
                 const banner = document.getElementById("cookieBanner");
                 if(banner) banner.style.display = "block";

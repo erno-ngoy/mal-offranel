@@ -63,7 +63,11 @@
             background: #fff;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 99999;
+            transition: opacity 0.5s ease; /* Fluidité pour la disparition */
         }
+
+        /* Correction mode sombre pour le loader si activé avant le chargement */
+        [data-theme="dark"] #fb-loader-wrapper { background: #121212; }
 
         .loader-brand-icon {
             font-size: 50px;
@@ -254,6 +258,8 @@
                 <a class="nav-link fw-semibold" href="/a-propos">À propos</a>
 
                 {% if session.get('user_id') %}
+                    <a class="nav-link fw-semibold text-orange" href="/parrainage"><i class="fas fa-gift me-1"></i> Parrainer</a>
+
                     {% if session.get('role') == 'admin' %}
                         <a class="btn btn-orange btn-sm mx-lg-2 my-2 my-lg-0" href="/publier">
                             <i class="fas fa-plus-circle me-1"></i> Publier
@@ -348,9 +354,29 @@
         setTheme(current === 'dark' ? 'light' : 'dark');
     });
 
-    // Appliquer le thème au chargement
     const savedTheme = localStorage.getItem('offranel_theme') || 'light';
     setTheme(savedTheme);
+
+    // --- GESTION DU SPLASH SCREEN UNIQUE (MISE À JOUR) ---
+    window.addEventListener('load', function() {
+        const loader = document.getElementById('fb-loader-wrapper');
+
+        // On vérifie si l'utilisateur a déjà vu le splash durant cette SESSION
+        if (sessionStorage.getItem('offranel_splash_seen')) {
+            if(loader) loader.style.display = 'none';
+        } else {
+            // Première fois : on affiche et on marque comme vu
+            setTimeout(() => {
+                if(loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                        sessionStorage.setItem('offranel_splash_seen', 'true');
+                    }, 500);
+                }
+            }, 1200); // Durée du splash
+        }
+    });
 
     // --- GESTION NAVBAR AU SCROLL ---
     window.addEventListener('scroll', function() {
@@ -397,17 +423,7 @@
         }
     }
 
-    window.addEventListener('load', function() {
-        const loader = document.getElementById('fb-loader-wrapper');
-        setTimeout(() => {
-            if(loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => { loader.style.display = 'none'; }, 500);
-            }
-        }, 1000);
-    });
-
-    // PWA & PUSH (VOTRE LOGIQUE)
+    // PWA & PUSH
     let deferredPrompt;
     const installBanner = document.getElementById('pwa-install-banner');
     const installBtn = document.getElementById('btn-install-pwa');
@@ -464,9 +480,7 @@
         }
     }
 
-    // --- CORRECTION : UTILISATION DE LOCALSTORAGE POUR AFFICHAGE UNIQUE ---
     function acceptCookies() {
-        // Changement : On utilise localStorage pour que ce soit permanent
         localStorage.setItem("offranel_notif_banner_seen", "true");
         const banner = document.getElementById("cookieBanner");
         if(banner) {
@@ -481,7 +495,6 @@
         updateCartBadge();
         window.addEventListener('storage', updateCartBadge);
 
-        // Changement : On vérifie localStorage au lieu de sessionStorage
         if (!localStorage.getItem("offranel_notif_banner_seen")) {
             setTimeout(() => {
                 const banner = document.getElementById("cookieBanner");

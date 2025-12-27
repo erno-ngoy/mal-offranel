@@ -13,7 +13,8 @@
             <div class="main-image-container mb-3">
                 <img id="mainImage" src="{{ product.images[0] if product.images else product.photo_url }}"
                      class="img-fluid rounded-4 shadow-sm w-100"
-                     style="max-height: 500px; object-fit: cover; cursor: zoom-in;">
+                     style="max-height: 500px; object-fit: cover; cursor: zoom-in;"
+                     onclick="openFullImage(this.src)">
             </div>
 
             {% if product.images and product.images|length > 1 %}
@@ -73,6 +74,11 @@
     </div>
 </div>
 
+<div id="imageLightbox" class="image-lightbox" onclick="this.style.display='none'">
+    <span class="close-lightbox">&times;</span>
+    <img class="lightbox-content" id="fullImg">
+</div>
+
 <script>
 function addToCart(id, title, price, currency, image) {
     let cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
@@ -86,6 +92,12 @@ function addToCart(id, title, price, currency, image) {
     if (typeof updateCartBadge === "function") { updateCartBadge(); }
     alert("Produit ajouté ! Retrouvez-le dans votre panier. 🍊");
 }
+
+// Fonction pour ouvrir l'image en grand
+function openFullImage(src) {
+    document.getElementById("fullImg").src = src;
+    document.getElementById("imageLightbox").style.display = "flex";
+}
 </script>
 
 <style>
@@ -98,7 +110,37 @@ function addToCart(id, title, price, currency, image) {
     .thumbnail-img:hover { opacity: 1; border-color: #FF6B00 !important; }
     .main-image-container { overflow: hidden; border-radius: 1rem; }
     #mainImage { transition: transform 0.5s ease; }
-    #mainImage:hover { transform: scale(1.05); }
+
+    /* LIGHTBOX STYLE */
+    .image-lightbox {
+        display: none;
+        position: fixed;
+        z-index: 99999;
+        left: 0; top: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.9);
+        align-items: center;
+        justify-content: center;
+        cursor: zoom-out;
+    }
+    .lightbox-content {
+        max-width: 95%;
+        max-height: 95%;
+        border-radius: 10px;
+        animation: zoomAnim 0.3s ease;
+    }
+    .close-lightbox {
+        position: absolute;
+        top: 20px; right: 35px;
+        color: #fff;
+        font-size: 40px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    @keyframes zoomAnim {
+        from {transform:scale(0.7); opacity:0}
+        to {transform:scale(1); opacity:1}
+    }
     .text-primary { color: #1877F2 !important; }
 </style>
 {% endblock %}

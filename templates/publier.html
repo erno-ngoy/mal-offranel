@@ -95,6 +95,26 @@
 </div>
 
 <script>
+// --- LOGIQUE POUR RÉDUIRE LES CATÉGORIES AUX PLUS IMPORTANTES ---
+document.addEventListener("DOMContentLoaded", () => {
+    const catSelect = document.getElementById('category');
+    // On définit les catégories que l'on veut garder
+    const allowedCategories = ["👗 Mode & Vêtements", "📱 Accessoires Téléphones", "🎧 Gadgets & Audio","Autres"];
+
+    // On vide les options actuelles (sauf la première "Choisir...")
+    const firstOption = catSelect.options[0];
+    catSelect.innerHTML = "";
+    catSelect.appendChild(firstOption);
+
+    // On ajoute uniquement nos 3 catégories importantes
+    allowedCategories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.innerHTML = cat;
+        catSelect.appendChild(opt);
+    });
+});
+
 const fileInput = document.getElementById('fileInput');
 const previewContainer = document.getElementById('previewContainer');
 const previewImg = document.getElementById('previewImg');

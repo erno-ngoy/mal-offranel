@@ -7,6 +7,48 @@
 </div>
 
 <div class="container mb-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0">Explorer par catégorie</h6>
+        <a href="/" class="text-orange small fw-bold text-decoration-none">Tout voir</a>
+    </div>
+
+    <div class="row g-2">
+        <div class="col-6 col-md-3">
+            <a href="/?category=👗 Mode & Vêtements" class="text-decoration-none">
+                <div class="category-card text-center p-3 animate__animated animate__fadeInUp" style="background: #FFF0E6; border-radius: 20px; border: 1px solid #FF6B00;">
+                    <div class="cat-icon mb-1" style="font-size: 1.4rem;">👗</div>
+                    <p class="mb-0 fw-bold text-dark" style="font-size: 0.75rem;">Mode</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="/?category=📱 Accessoires Téléphones" class="text-decoration-none">
+                <div class="category-card text-center p-3 animate__animated animate__fadeInUp" style="animation-delay: 0.1s; background: #E6F2FF; border-radius: 20px; border: 1px solid #1877F2;">
+                    <div class="cat-icon mb-1" style="font-size: 1.4rem;">📱</div>
+                    <p class="mb-0 fw-bold text-dark" style="font-size: 0.75rem;">Accessoires</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="/?category=🎧 Gadgets & Audio" class="text-decoration-none">
+                <div class="category-card text-center p-3 animate__animated animate__fadeInUp" style="animation-delay: 0.2s; background: #F2F2F2; border-radius: 20px; border: 1px solid #1A1A1A;">
+                    <div class="cat-icon mb-1" style="font-size: 1.4rem;">🎧</div>
+                    <p class="mb-0 fw-bold text-dark" style="font-size: 0.75rem;">Gadgets</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="/?category=📦 Autres" class="text-decoration-none">
+                <div class="category-card text-center p-3 animate__animated animate__fadeInUp" style="animation-delay: 0.3s; background: #FFF9E6; border-radius: 20px; border: 1px solid #FFD700;">
+                    <div class="cat-icon mb-1" style="font-size: 1.4rem;">📦</div>
+                    <p class="mb-0 fw-bold text-dark" style="font-size: 0.75rem;">Autres</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-4">
     <form action="/" method="GET" class="row g-2 justify-content-center">
         <div class="col-9 col-md-6">
             <div class="input-group shadow-sm rounded-pill overflow-hidden">
@@ -137,6 +179,12 @@ async function toggleStock(id) {
         transform: translateY(-5px);
         box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
     }
+    /* Styles Catégories */
+    .category-card { transition: all 0.3s; cursor: pointer; }
+    .category-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+    [data-theme="dark"] .category-card { background: #242424 !important; border-color: rgba(255,255,255,0.1) !important; }
+    [data-theme="dark"] .category-card p { color: #fff !important; }
+
     .btn-orange { background-color: #FF6B00; color: white; border: none; }
     .btn-orange:hover { background-color: #e66000; color: white; }
     .btn-outline-orange { color: #FF6B00; border: 1px solid #FF6B00; }

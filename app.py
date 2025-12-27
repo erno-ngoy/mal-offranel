@@ -19,9 +19,13 @@ VAPID_PUBLIC_KEY = "BOT0JEWz9-w_eTSqZXlLXewXXq4hT3zvWPFfyb68z-aH80OVc1oX2xvftH4d
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "VOTRE_CLE_PRIVEE_SECRET")
 VAPID_CLAIMS = {"sub": "mailto:admin@offranel.com"}
 
-# --- LISTE DES CATÉGORIES ---
-CATEGORIES = ["Électronique", "Mode", "Maison", "Beauté", "Sport", "Alimentation", "Services", "Véhicules",
-              "Immobilier", "Autres"]
+# --- LISTE DES CATÉGORIES (MISES À JOUR) ---
+CATEGORIES = [
+    "👗 Mode & Vêtements",
+    "📱 Accessoires Téléphones",
+    "🎧 Gadgets & Audio",
+    "📦 Autres"
+]
 
 # --- INITIALISATION FIREBASE ---
 if not firebase_admin._apps:
@@ -75,7 +79,6 @@ def index():
     search_query = request.args.get('search', '').lower()
     category_filter = request.args.get('category', '')
 
-    # --- AJOUT : RÉCUPÉRATION DU POPUP POUR TOUS LES UTILISATEURS ---
     popup_data = None
     try:
         pop_doc = db.collection('settings').document('popup_message').get()
@@ -85,20 +88,24 @@ def index():
         print(f"Erreur popup index: {e}")
 
     try:
-        products_stream = db.collection('products').order_by('created_at', direction='DESCENDING').stream()
+        # Optimisation : on filtre par catégorie directement via Firestore si possible
+        products_ref = db.collection('products').order_by('created_at', direction='DESCENDING')
+
+        if category_filter:
+            products_ref = products_ref.where('category', '==', category_filter)
+
+        products_stream = products_ref.stream()
         products = []
         for doc in products_stream:
             p = doc.to_dict()
             p['id'] = doc.id
             match_search = search_query in p.get('title', '').lower() if search_query else True
-            match_cat = p.get('category') == category_filter if category_filter else True
-            if match_search and match_cat:
+            if match_search:
                 products.append(p)
     except Exception as e:
         print(f"Erreur Firestore : {e}")
         products = []
 
-    # On passe 'popup=popup_data' pour que base.html puisse l'afficher
     return render_template('index.html', products=products, categories=CATEGORIES, popup=popup_data)
 
 
@@ -137,7 +144,7 @@ def profile(uid=None):
                     p = doc.to_dict()
                     p['id'] = doc.id
                     user_products.append(p)
-            except Exception as e:
+            except Exception:
                 products_ref = db.collection('products').where('author_id', '==', target_uid).stream()
                 for doc in products_ref:
                     p = doc.to_dict()
@@ -146,7 +153,7 @@ def profile(uid=None):
             return render_template('profile.html', user=user_info, products=user_products)
         flash("Profil introuvable.", "danger")
         return redirect(url_for('index'))
-    except Exception as global_e:
+    except Exception:
         return "Erreur Interne du Serveur", 500
 
 
@@ -163,7 +170,8 @@ def set_session():
         role = 'user'
         user_ref.set({
             'name': user_name, 'email': data.get('email'), 'photo': data.get('photo'),
-            'role': role, 'last_login': datetime.datetime.now()
+            'role': role, 'last_login': datetime.datetime.now(),
+            'points': 0  # Initialisation des points de parrainage
         })
     else:
         role = user_doc.to_dict().get('role', 'user')
@@ -195,8 +203,19 @@ def a_propos():
         about_doc = db.collection('settings').document('about_us').get()
         content = about_doc.to_dict() if about_doc.exists else {"text": "Bienvenue sur Offranel Shop !"}
         return render_template('a_propos.html', content=content)
-    except Exception as e:
+    except Exception:
         return render_template('a_propos.html', content={"text": "Bienvenue sur Offranel Shop !"})
+
+
+@app.route('/parrainage')
+@login_required
+def parrainage():
+    uid = session.get('user_id')
+    user_doc = db.collection('users').document(uid).get()
+    user_data = user_doc.to_dict() if user_doc.exists else {"points": 0}
+    # Lien de parrainage basé sur l'UID
+    referral_link = f"{request.host_url}login?ref={uid}"
+    return render_template('parrainage.html', points=user_data.get('points', 0), ref_link=referral_link)
 
 
 @app.route('/api/get_popup')
@@ -271,7 +290,7 @@ def edit_about():
             db.collection('settings').document('about_us').set({"text": new_text})
             flash("Page 'À propos' mise à jour avec succès !", "success")
             return redirect(url_for('a_propos'))
-        except Exception as e:
+        except Exception:
             flash("Erreur lors de la sauvegarde.", "danger")
             return redirect(url_for('index'))
     about_doc = db.collection('settings').document('about_us').get()

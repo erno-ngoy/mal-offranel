@@ -150,7 +150,6 @@
         }
         .search-input:focus { border-color: var(--offranel-orange); box-shadow: none; outline: none; }
 
-        /* Bouton recherche navbar */
         .search-btn {
             border-radius: 0 50px 50px 0 !important;
             background: var(--offranel-orange); color: white; border: none; padding: 0 20px; transition: 0.3s;
@@ -254,8 +253,6 @@
                 <a class="nav-link fw-semibold" href="/a-propos">À propos</a>
 
                 {% if session.get('user_id') %}
-                    <a class="nav-link fw-semibold text-orange" href="/parrainage"><i class="fas fa-gift me-1"></i> Parrainer</a>
-
                     {% if session.get('role') == 'admin' %}
                         <a class="btn btn-orange btn-sm mx-lg-2 my-2 my-lg-0" href="/publier">
                             <i class="fas fa-plus-circle me-1"></i> Publier
@@ -352,7 +349,6 @@
     const savedTheme = localStorage.getItem('offranel_theme') || 'light';
     setTheme(savedTheme);
 
-    // --- LOGIQUE FINALE SPLASH SCREEN ---
     window.addEventListener('load', function() {
         const loader = document.getElementById('fb-loader-wrapper');
         if (!sessionStorage.getItem('offranel_splash_seen')) {

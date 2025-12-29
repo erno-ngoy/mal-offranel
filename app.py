@@ -85,7 +85,7 @@ def index():
 # --- ROUTE API POUR CHARGEMENT PROGRESSIF (Mis à jour : 4 par 4) ---
 @app.route('/api/products')
 def get_products_api():
-    limit = 10
+    limit = 4  # Modifié pour charger 4 par 4 comme demandé
     last_id = request.args.get('last_id')
     category_filter = request.args.get('category', '')
     search_query = request.args.get('search', '').lower()
@@ -108,11 +108,11 @@ def get_products_api():
 
             all_products.append(p)
 
-        # Pagination manuelle
+        # Pagination manuelle corrigée
         start_index = 0
-        if last_id:
+        if last_id and last_id != 'null' and last_id != '':
             for i, p in enumerate(all_products):
-                if p['id'] == last_id:
+                if str(p['id']) == str(last_id):
                     start_index = i + 1
                     break
 
@@ -123,7 +123,7 @@ def get_products_api():
             "has_more": len(all_products) > (start_index + limit)
         })
     except Exception as e:
-        # En cas de problème de connexion ou d'erreur Firebase, on renvoie un message simple
+        print(f"Erreur API: {e}")
         return jsonify({"error": True, "message": "Problème de connexion au serveur"}), 500
 
 

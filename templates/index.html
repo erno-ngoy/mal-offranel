@@ -181,7 +181,7 @@
                         <div class="p-2 d-flex align-items-center bg-white border-bottom">
                             <a href="/profile/${product.author_id || ''}" class="text-decoration-none d-flex align-items-center">
                                 <img src="${product.author_photo || 'https://ui-avatars.com/api/?name=' + product.author_name + '&background=FF6B00&color=fff'}"
-                                     class="rounded-circle me-2" width="25" height="25" style="object-fit: cover;">
+                                     class="rounded-circle me-2" width="25" height="25" style="object-fit: cover;" loading="lazy">
                                 <div class="d-flex align-items-center">
                                     <span class="fw-bold text-dark" style="font-size: 0.75rem;">${product.author_name || 'Offranel Admin'}</span>
                                     <i class="fas fa-check-circle text-primary ms-1" style="font-size: 0.7rem;"></i>
@@ -190,7 +190,7 @@
                         </div>
 
                         <a href="/produit/${product.id}" class="text-decoration-none">
-                            <img src="${imageSrc}" class="card-img-top" style="height: 180px; object-fit: cover;" loading="lazy">
+                            <img src="${imageSrc}" class="card-img-top" style="height: 180px; object-fit: cover; background-color: #f8f9fa;" loading="lazy" onerror="this.src='https://placehold.co/400x400?text=Image+Indisponible'">
                         </a>
 
                         <div class="card-body p-3">

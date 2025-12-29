@@ -38,6 +38,17 @@
         opacity: 1;
         transform: translateY(0);
     }
+
+    /* --- ANIMATION DU LOGO (ERREUR) --- */
+    @keyframes orange-bounce {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-15px) scale(1.1); }
+    }
+    .error-logo {
+        display: inline-block;
+        font-size: 3rem;
+        animation: orange-bounce 1.5s infinite ease-in-out;
+    }
 </style>
 
 <div class="text-center py-4 animate__animated animate__fadeIn">
@@ -127,7 +138,6 @@
     const container = document.getElementById('productsContainer');
     const skeleton = document.getElementById('loadingSkeleton');
 
-    // Récupération des filtres depuis l'URL
     const urlParams = new URLSearchParams(window.location.search);
     const currentCategory = urlParams.get('category') || '';
     const currentSearch = urlParams.get('search') || '';
@@ -139,8 +149,10 @@
         skeleton.style.display = 'flex';
 
         try {
-            // L'API est appelée avec une limite de 4 côté serveur ou gérée ici
             const response = await fetch(`/api/products?last_id=${lastId || ''}&category=${currentCategory}&search=${currentSearch}`);
+
+            if (!response.ok) throw new Error('Network error');
+
             const data = await response.json();
 
             if (data.products.length === 0 && !lastId) {
@@ -213,23 +225,30 @@
                     </div>
                 `;
                 container.appendChild(productDiv);
-
-                // Animation YouTube-style : apparition progressive
                 setTimeout(() => productDiv.classList.add('show'), index * 100);
-
                 lastId = product.id;
             });
 
             hasMore = data.has_more;
         } catch (error) {
             console.error("Erreur de chargement:", error);
+            if (!lastId) {
+                container.innerHTML = `
+                <div class="text-center py-5 w-100 animate__animated animate__fadeIn">
+                    <div class="error-logo">🍊</div>
+                    <h4 class="fw-bold mt-3" style="color: #FF6B00;">Oups ! Un petit souci...</h4>
+                    <p class="text-muted">Nous n'arrivons pas à charger les produits.<br>Vérifiez votre connexion internet.</p>
+                    <button onclick="window.location.reload()" class="btn btn-orange rounded-pill px-4">
+                        <i class="fas fa-sync-alt me-2"></i>Réessayer
+                    </button>
+                </div>`;
+            }
         } finally {
             isLoading = false;
             skeleton.style.display = 'none';
         }
     }
 
-    // Observer pour déclencher le chargement des 4 suivants dès que le sentinel est visible
     const observer = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting) loadProducts();
     }, { threshold: 0.1 });

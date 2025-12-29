@@ -123,7 +123,8 @@ def get_products_api():
             "has_more": len(all_products) > (start_index + limit)
         })
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        # En cas de problème de connexion ou d'erreur Firebase, on renvoie un message simple
+        return jsonify({"error": True, "message": "Problème de connexion au serveur"}), 500
 
 
 @app.route('/login')

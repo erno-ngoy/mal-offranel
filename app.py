@@ -19,13 +19,8 @@ VAPID_PUBLIC_KEY = "BOT0JEWz9-w_eTSqZXlLXewXXq4hT3zvWPFfyb68z-aH80OVc1oX2xvftH4d
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "VOTRE_CLE_PRIVEE_SECRET")
 VAPID_CLAIMS = {"sub": "mailto:admin@offranel.com"}
 
-# --- LISTE DES CATÉGORIES (CORRESPONDANCE AVEC LE FRONT-END) ---
-CATEGORIES = [
-    "Mode",
-    "Accessoires",
-    "Gadgets",
-    "Autres"
-]
+# --- LISTE DES CATÉGORIES ---
+CATEGORIES = ["Mode", "Accessoires", "Gadgets", "Autres"]
 
 # --- INITIALISATION FIREBASE ---
 if not firebase_admin._apps:
@@ -76,9 +71,7 @@ def trigger_push_notifications(title, body):
 
 @app.route('/')
 def index():
-    search_query = request.args.get('search', '').lower()
-    category_filter = request.args.get('category', '')
-
+    # La route index ne charge plus les produits au démarrage (c'est l'API qui le fera)
     popup_data = None
     try:
         pop_doc = db.collection('settings').document('popup_message').get()
@@ -87,34 +80,53 @@ def index():
     except Exception as e:
         print(f"Erreur popup index: {e}")
 
-    try:
-        # On récupère tous les produits pour appliquer un filtrage flexible
-        products_ref = db.collection('products').order_by('created_at', direction='DESCENDING')
-        products_stream = products_ref.stream()
+    return render_template('index.html', categories=CATEGORIES, popup=popup_data)
 
-        products = []
-        for doc in products_stream:
+
+# --- NOUVELLE ROUTE API POUR CHARGEMENT PROGRESSIF (10 par 10) ---
+@app.route('/api/products')
+def get_products_api():
+    limit = 10
+    last_id = request.args.get('last_id')
+    category_filter = request.args.get('category', '')
+    search_query = request.args.get('search', '').lower()
+
+    try:
+        query = db.collection('products').order_by('created_at', direction='DESCENDING')
+
+        # Note: Le filtrage Firestore est strict. Pour le "contient", on filtre après récupération
+        docs = query.stream()
+
+        all_products = []
+        for doc in docs:
             p = doc.to_dict()
             p['id'] = doc.id
 
-            # Logique de filtrage par catégorie
-            if category_filter:
-                # On vérifie si la catégorie du produit contient le filtre (ex: 'Mode' match 'Mode & Vêtements')
-                if category_filter not in p.get('category', ''):
-                    continue
+            # Filtrage Catégorie
+            if category_filter and category_filter not in p.get('category', ''):
+                continue
+            # Filtrage Recherche
+            if search_query and search_query not in p.get('title', '').lower():
+                continue
 
-            # Logique de filtrage par recherche
-            if search_query:
-                if search_query not in p.get('title', '').lower():
-                    continue
+            all_products.append(p)
 
-            products.append(p)
+        # Pagination manuelle basée sur le dernier ID vu
+        start_index = 0
+        if last_id:
+            for i, p in enumerate(all_products):
+                if p['id'] == last_id:
+                    start_index = i + 1
+                    break
 
+        paginated_products = all_products[start_index: start_index + limit]
+
+        return jsonify({
+            "products": paginated_products,
+            "has_more": len(all_products) > (start_index + limit)
+        })
     except Exception as e:
-        print(f"Erreur Firestore : {e}")
-        products = []
-
-    return render_template('index.html', products=products, categories=CATEGORIES, popup=popup_data)
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/login')
@@ -145,19 +157,11 @@ def profile(uid=None):
             user_info = user_doc.to_dict()
             user_info['id'] = user_doc.id
             user_products = []
-            try:
-                products_ref = db.collection('products').where('author_id', '==', target_uid).order_by('created_at',
-                                                                                                       direction='DESCENDING').stream()
-                for doc in products_ref:
-                    p = doc.to_dict()
-                    p['id'] = doc.id
-                    user_products.append(p)
-            except Exception:
-                products_ref = db.collection('products').where('author_id', '==', target_uid).stream()
-                for doc in products_ref:
-                    p = doc.to_dict()
-                    p['id'] = doc.id
-                    user_products.append(p)
+            products_ref = db.collection('products').where('author_id', '==', target_uid).stream()
+            for doc in products_ref:
+                p = doc.to_dict()
+                p['id'] = doc.id
+                user_products.append(p)
             return render_template('profile.html', user=user_info, products=user_products)
         flash("Profil introuvable.", "danger")
         return redirect(url_for('index'))

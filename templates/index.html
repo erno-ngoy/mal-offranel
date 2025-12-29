@@ -1,6 +1,45 @@
 {% extends 'base.html' %}
 {% block content %}
 
+<style>
+    /* --- ANIMATIONS SKELETON (Style YouTube) --- */
+    .skeleton-loader {
+        background: #f6f7f8;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: skeleton-loading 1.5s infinite;
+        border-radius: 15px;
+    }
+
+    @keyframes skeleton-loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    .skeleton-card {
+        height: 350px;
+        border-radius: 20px;
+        background: white;
+        padding: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    .skeleton-img { height: 180px; width: 100%; margin-bottom: 15px; }
+    .skeleton-title { height: 20px; width: 80%; margin-bottom: 10px; }
+    .skeleton-price { height: 15px; width: 40%; }
+
+    /* --- ANIMATION D'APPARITION DES PRODUITS --- */
+    .product-item {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.5s ease-out;
+    }
+    .product-item.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>
+
 <div class="text-center py-4 animate__animated animate__fadeIn">
     <h1 class="fw-bold" style="color: #FF6B00;">Offranel Shop</h1>
     <p class="text-muted">Découvrez nos meilleurs articles au meilleur prix.</p>
@@ -15,7 +54,7 @@
     <div class="row g-2">
         <div class="col-6 col-md-3">
             <a href="/?category=Mode" class="text-decoration-none">
-                <div class="category-card text-center p-3 animate__animated animate__fadeInUp" style="background: #FFF0E6; border-radius: 20px; border: 1px solid #FF6B00;">
+                <div class="category-card text-center p-3" style="background: #FFF0E6; border-radius: 20px; border: 1px solid #FF6B00;">
                     <div class="cat-icon mb-1" style="font-size: 1.4rem;">👗</div>
                     <p class="mb-0 fw-bold text-dark" style="font-size: 0.75rem;">Mode</p>
                 </div>
@@ -23,7 +62,7 @@
         </div>
         <div class="col-6 col-md-3">
             <a href="/?category=Accessoires" class="text-decoration-none">
-                <div class="category-card text-center p-3 animate__animated animate__fadeInUp" style="animation-delay: 0.1s; background: #E6F2FF; border-radius: 20px; border: 1px solid #1877F2;">
+                <div class="category-card text-center p-3" style="background: #E6F2FF; border-radius: 20px; border: 1px solid #1877F2;">
                     <div class="cat-icon mb-1" style="font-size: 1.4rem;">📱</div>
                     <p class="mb-0 fw-bold text-dark" style="font-size: 0.75rem;">Accessoires</p>
                 </div>
@@ -31,7 +70,7 @@
         </div>
         <div class="col-6 col-md-3">
             <a href="/?category=Gadgets" class="text-decoration-none">
-                <div class="category-card text-center p-3 animate__animated animate__fadeInUp" style="animation-delay: 0.2s; background: #F2F2F2; border-radius: 20px; border: 1px solid #1A1A1A;">
+                <div class="category-card text-center p-3" style="background: #F2F2F2; border-radius: 20px; border: 1px solid #1A1A1A;">
                     <div class="cat-icon mb-1" style="font-size: 1.4rem;">🎧</div>
                     <p class="mb-0 fw-bold text-dark" style="font-size: 0.75rem;">Gadgets</p>
                 </div>
@@ -39,7 +78,7 @@
         </div>
         <div class="col-6 col-md-3">
             <a href="/?category=Autres" class="text-decoration-none">
-                <div class="category-card text-center p-3 animate__animated animate__fadeInUp" style="animation-delay: 0.3s; background: #FFF9E6; border-radius: 20px; border: 1px solid #FFD700;">
+                <div class="category-card text-center p-3" style="background: #FFF9E6; border-radius: 20px; border: 1px solid #FFD700;">
                     <div class="cat-icon mb-1" style="font-size: 1.4rem;">📦</div>
                     <p class="mb-0 fw-bold text-dark" style="font-size: 0.75rem;">Autres</p>
                 </div>
@@ -53,7 +92,7 @@
         <div class="col-9 col-md-6">
             <div class="input-group shadow-sm rounded-pill overflow-hidden">
                 <span class="input-group-text bg-white border-0"><i class="fas fa-search text-muted"></i></span>
-                <input type="text" name="search" class="form-control border-0" placeholder="Rechercher un article..." value="{{ request.args.get('search', '') }}">
+                <input type="text" name="search" id="searchInput" class="form-control border-0" placeholder="Rechercher un article..." value="{{ request.args.get('search', '') }}">
             </div>
         </div>
         <div class="col-3 col-md-1">
@@ -62,136 +101,170 @@
             </button>
         </div>
     </form>
-
-    <div class="d-flex gap-2 mt-3 overflow-auto pb-2 justify-content-start justify-content-md-center" style="white-space: nowrap; scrollbar-width: none;">
-        <a href="/" class="btn btn-sm {{ 'btn-orange' if not request.args.get('category') else 'btn-outline-orange' }} rounded-pill px-3">Tout</a>
-        {% for cat in categories %}
-            <a href="/?category={{ cat }}" class="btn btn-sm {{ 'btn-orange' if request.args.get('category') == cat else 'btn-outline-orange' }} rounded-pill px-3">
-                {{ cat }}
-            </a>
-        {% endfor %}
-    </div>
 </div>
 
-<div class="row g-4 mt-2">
-    {% for product in products %}
-    <div class="col-6 col-md-4 col-lg-3 animate__animated animate__zoomIn">
-        <div class="card h-100 border-0 shadow-sm position-relative" style="border-radius: 20px; transition: transform 0.3s; overflow: hidden; {{ 'opacity: 0.7;' if product.in_stock == False }}">
-
-            {% if product.in_stock == False %}
-            <div class="position-absolute top-50 start-50 translate-middle" style="z-index: 10; transform: translate(-50%, -50%) rotate(-15deg) !important;">
-                <span class="badge bg-danger px-3 py-2 shadow-lg fw-bold" style="font-size: 1.2rem; border: 2px solid white;">VENDU</span>
-            </div>
-            {% endif %}
-
-            <div class="p-2 d-flex align-items-center bg-white border-bottom">
-                <a href="/profile/{{ product.author_id if product.author_id else '' }}" class="text-decoration-none d-flex align-items-center">
-                    <img src="{{ product.author_photo if product.author_photo else 'https://ui-avatars.com/api/?name=' ~ product.author_name ~ '&background=FF6B00&color=fff' }}"
-                         class="rounded-circle me-2" width="25" height="25" style="object-fit: cover;">
-                    <div class="d-flex align-items-center">
-                        <span class="fw-bold text-dark" style="font-size: 0.75rem;">{{ product.author_name if product.author_name else 'Offranel Admin' }}</span>
-                        <i class="fas fa-check-circle text-primary ms-1" style="font-size: 0.7rem;" title="Certifié"></i>
-                    </div>
-                </a>
-            </div>
-
-            <a href="{{ url_for('detail_produit', id=product.id) }}" class="text-decoration-none">
-                {% if product.images and product.images is iterable and product.images|length > 0 %}
-                    <img src="{{ product.images[0] }}" class="card-img-top" alt="{{ product.title }}"
-                         style="height: 180px; object-fit: cover;">
-                {% elif product.photo_url %}
-                    <img src="{{ product.photo_url }}" class="card-img-top" alt="{{ product.title }}"
-                         style="height: 180px; object-fit: cover;">
-                {% else %}
-                    <img src="https://placehold.co/400x400?text=Aucune+Image" class="card-img-top"
-                         style="height: 180px; object-fit: cover;">
-                {% endif %}
-            </a>
-
-            <div class="card-body p-3">
-                <div class="mb-1">
-                    <span class="badge bg-light text-muted p-1 px-2 mb-2" style="font-size: 0.6rem; border-radius: 5px;">{{ product.category if product.category else 'Général' }}</span>
-                    <h6 class="fw-bold text-dark mb-0 text-truncate">{{ product.title }}</h6>
-                </div>
-                <p class="text-orange fw-bold mb-3">{{ product.price }} {{ product.currency }}</p>
-
-                <div class="d-grid gap-2">
-                    {% if session.get('user_id') %}
-                        {% if product.in_stock != False %}
-                            <button onclick="addToCart('{{ product.id }}', '{{ product.title }}', '{{ product.price }}', '{{ product.currency }}', '{{ product.images[0] if product.images else product.photo_url }}')"
-                                    class="btn btn-orange btn-sm rounded-pill fw-bold">
-                                <i class="fas fa-cart-plus me-1"></i> Ajouter
-                            </button>
-                        {% else %}
-                            <button class="btn btn-secondary btn-sm rounded-pill fw-bold" disabled>Épuisé</button>
-                        {% endif %}
-                        <a href="{{ url_for('detail_produit', id=product.id) }}" class="btn btn-outline-orange btn-sm rounded-pill">Détails</a>
-                    {% else %}
-                        <a href="{{ url_for('login_page') }}" class="btn btn-orange btn-sm rounded-pill fw-bold">
-                            <i class="fas fa-lock me-1"></i> Connexion pour acheter
-                        </a>
-                        <small class="text-center text-muted" style="font-size: 0.65rem;">Connectez-vous pour voir les détails</small>
-                    {% endif %}
-
-                    {% if session.get('role') == 'admin' %}
-                    <div class="d-flex gap-1 mt-1">
-                        <button onclick="toggleStock('{{ product.id }}')" class="btn btn-light btn-sm flex-grow-1 rounded-pill border" title="Changer disponibilité">
-                            <i class="fas fa-sync-alt"></i> Stock
-                        </button>
-                        <form action="{{ url_for('supprimer', id=product.id) }}" method="POST" onsubmit="return confirm('Supprimer cet article ?');" class="flex-grow-1">
-                            <button type="submit" class="btn btn-light btn-sm w-100 text-danger rounded-pill border">Supprimer</button>
-                        </form>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+<div class="row g-4 mt-2" id="productsContainer">
     </div>
-    {% else %}
-    <div class="text-center py-5">
-        <h3 class="text-muted">Aucun article ne correspond à votre recherche ou catégorie. 📦</h3>
-        <a href="/" class="btn btn-orange mt-3 rounded-pill">Afficher tout</a>
+
+<div class="row g-4 mt-2" id="loadingSkeleton" style="display: none;">
+    {% for i in range(4) %}
+    <div class="col-6 col-md-4 col-lg-3">
+        <div class="skeleton-card">
+            <div class="skeleton-loader skeleton-img"></div>
+            <div class="skeleton-loader skeleton-title"></div>
+            <div class="skeleton-loader skeleton-price"></div>
+        </div>
     </div>
     {% endfor %}
 </div>
 
-<script>
-function addToCart(id, title, price, currency, image) {
-    let cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
-    const exists = cart.find(item => item.id === id);
-    if (exists) {
-        alert("Cet article est déjà dans votre panier !");
-        return;
-    }
-    cart.push({ id, title, price, currency, image });
-    localStorage.setItem('offranel_cart', JSON.stringify(cart));
-    if (typeof updateCartBadge === "function") { updateCartBadge(); }
-    alert("Produit ajouté au panier ! 🍊");
-}
+<div id="scrollSentinel" style="height: 20px;"></div>
 
-async function toggleStock(id) {
-    if(!confirm("Changer la disponibilité de cet article ?")) return;
-    const response = await fetch(`/admin/toggle_stock/${id}`, { method: 'POST' });
-    if (response.ok) { window.location.reload(); }
-}
+<script>
+    let lastId = null;
+    let isLoading = false;
+    let hasMore = true;
+    const container = document.getElementById('productsContainer');
+    const skeleton = document.getElementById('loadingSkeleton');
+
+    // Récupération des filtres depuis l'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentCategory = urlParams.get('category') || '';
+    const currentSearch = urlParams.get('search') || '';
+
+    async function loadProducts() {
+        if (isLoading || !hasMore) return;
+
+        isLoading = true;
+        skeleton.style.display = 'flex';
+
+        try {
+            const response = await fetch(`/api/products?last_id=${lastId || ''}&category=${currentCategory}&search=${currentSearch}`);
+            const data = await response.json();
+
+            if (data.products.length === 0 && !lastId) {
+                container.innerHTML = `<div class="text-center py-5 w-100">
+                    <h3 class="text-muted">Aucun article trouvé. 📦</h3>
+                    <a href="/" class="btn btn-orange mt-3 rounded-pill">Afficher tout</a>
+                </div>`;
+            }
+
+            data.products.forEach((product, index) => {
+                const productDiv = document.createElement('div');
+                productDiv.className = "col-6 col-md-4 col-lg-3 product-item";
+
+                const imageSrc = (product.images && product.images.length > 0) ? product.images[0] : (product.photo_url || 'https://placehold.co/400x400?text=Aucune+Image');
+                const isOutOfStock = product.in_stock === false;
+                const isAdmin = "{{ session.get('role') }}" === "admin";
+                const isLoggedIn = "{{ session.get('user_id') }}" !== "";
+
+                productDiv.innerHTML = `
+                    <div class="card h-100 border-0 shadow-sm position-relative" style="border-radius: 20px; overflow: hidden; ${isOutOfStock ? 'opacity: 0.7;' : ''}">
+                        ${isOutOfStock ? `
+                        <div class="position-absolute top-50 start-50 translate-middle" style="z-index: 10; transform: translate(-50%, -50%) rotate(-15deg) !important;">
+                            <span class="badge bg-danger px-3 py-2 shadow-lg fw-bold" style="font-size: 1.2rem; border: 2px solid white;">VENDU</span>
+                        </div>` : ''}
+
+                        <div class="p-2 d-flex align-items-center bg-white border-bottom">
+                            <a href="/profile/${product.author_id || ''}" class="text-decoration-none d-flex align-items-center">
+                                <img src="${product.author_photo || 'https://ui-avatars.com/api/?name=' + product.author_name + '&background=FF6B00&color=fff'}"
+                                     class="rounded-circle me-2" width="25" height="25" style="object-fit: cover;">
+                                <div class="d-flex align-items-center">
+                                    <span class="fw-bold text-dark" style="font-size: 0.75rem;">${product.author_name || 'Offranel Admin'}</span>
+                                    <i class="fas fa-check-circle text-primary ms-1" style="font-size: 0.7rem;"></i>
+                                </div>
+                            </a>
+                        </div>
+
+                        <a href="/produit/${product.id}" class="text-decoration-none">
+                            <img src="${imageSrc}" class="card-img-top" style="height: 180px; object-fit: cover;" loading="lazy">
+                        </a>
+
+                        <div class="card-body p-3">
+                            <div class="mb-1">
+                                <span class="badge bg-light text-muted p-1 px-2 mb-2" style="font-size: 0.6rem; border-radius: 5px;">${product.category || 'Général'}</span>
+                                <h6 class="fw-bold text-dark mb-0 text-truncate">${product.title}</h6>
+                            </div>
+                            <p class="text-orange fw-bold mb-3">${product.price} ${product.currency}</p>
+
+                            <div class="d-grid gap-2">
+                                ${isLoggedIn ? `
+                                    ${!isOutOfStock ? `
+                                        <button onclick="addToCart('${product.id}', '${product.title.replace(/'/g, "\\'")}', '${product.price}', '${product.currency}', '${imageSrc}')"
+                                                class="btn btn-orange btn-sm rounded-pill fw-bold">
+                                            <i class="fas fa-cart-plus me-1"></i> Ajouter
+                                        </button>
+                                    ` : `<button class="btn btn-secondary btn-sm rounded-pill fw-bold" disabled>Épuisé</button>`}
+                                    <a href="/produit/${product.id}" class="btn btn-outline-orange btn-sm rounded-pill">Détails</a>
+                                ` : `
+                                    <a href="/login" class="btn btn-orange btn-sm rounded-pill fw-bold"><i class="fas fa-lock me-1"></i> Connexion</a>
+                                `}
+
+                                ${isAdmin ? `
+                                <div class="d-flex gap-1 mt-1">
+                                    <button onclick="toggleStock('${product.id}')" class="btn btn-light btn-sm flex-grow-1 rounded-pill border"><i class="fas fa-sync-alt"></i> Stock</button>
+                                    <form action="/supprimer/${product.id}" method="POST" onsubmit="return confirm('Supprimer ?');" class="flex-grow-1">
+                                        <button type="submit" class="btn btn-light btn-sm w-100 text-danger rounded-pill border">Supprimer</button>
+                                    </form>
+                                </div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(productDiv);
+
+                // Animation d'entrée progressive
+                setTimeout(() => productDiv.classList.add('show'), index * 100);
+
+                lastId = product.id;
+            });
+
+            hasMore = data.has_more;
+        } catch (error) {
+            console.error("Erreur de chargement:", error);
+        } finally {
+            isLoading = false;
+            skeleton.style.display = 'none';
+        }
+    }
+
+    // Observer pour le scroll infini
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) loadProducts();
+    }, { threshold: 0.1 });
+
+    observer.observe(document.getElementById('scrollSentinel'));
+
+    // Fonctions globales
+    function addToCart(id, title, price, currency, image) {
+        let cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
+        if (cart.find(item => item.id === id)) {
+            alert("Déjà dans le panier !");
+            return;
+        }
+        cart.push({ id, title, price, currency, image });
+        localStorage.setItem('offranel_cart', JSON.stringify(cart));
+        if (typeof updateCartBadge === "function") { updateCartBadge(); }
+        alert("Ajouté au panier ! 🍊");
+    }
+
+    async function toggleStock(id) {
+        if(!confirm("Changer la disponibilité ?")) return;
+        const response = await fetch(`/admin/toggle_stock/${id}`, { method: 'POST' });
+        if (response.ok) { window.location.reload(); }
+    }
 </script>
 
 <style>
-    .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-    }
-    .category-card { transition: all 0.3s; cursor: pointer; }
+    .card { transition: transform 0.3s; }
+    .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+    .category-card { transition: all 0.3s; cursor: pointer; border-radius: 20px; }
     .category-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-    [data-theme="dark"] .category-card { background: #242424 !important; border-color: rgba(255,255,255,0.1) !important; }
-    [data-theme="dark"] .category-card p { color: #fff !important; }
-
     .btn-orange { background-color: #FF6B00; color: white; border: none; }
     .btn-orange:hover { background-color: #e66000; color: white; }
     .btn-outline-orange { color: #FF6B00; border: 1px solid #FF6B00; }
     .btn-outline-orange:hover { background-color: #FF6B00; color: white; }
     .text-orange { color: #FF6B00; }
-    .text-primary { color: #1877F2 !important; }
     ::-webkit-scrollbar { display: none; }
 </style>
 

@@ -71,7 +71,6 @@ def trigger_push_notifications(title, body):
 
 @app.route('/')
 def index():
-    # La route index ne charge plus les produits au démarrage (c'est l'API qui le fera)
     popup_data = None
     try:
         pop_doc = db.collection('settings').document('popup_message').get()
@@ -83,18 +82,16 @@ def index():
     return render_template('index.html', categories=CATEGORIES, popup=popup_data)
 
 
-# --- NOUVELLE ROUTE API POUR CHARGEMENT PROGRESSIF (10 par 10) ---
+# --- ROUTE API POUR CHARGEMENT PROGRESSIF (Mis à jour : 4 par 4) ---
 @app.route('/api/products')
 def get_products_api():
-    limit = 10
+    limit = 4  # Modifié à 4 comme demandé
     last_id = request.args.get('last_id')
     category_filter = request.args.get('category', '')
     search_query = request.args.get('search', '').lower()
 
     try:
         query = db.collection('products').order_by('created_at', direction='DESCENDING')
-
-        # Note: Le filtrage Firestore est strict. Pour le "contient", on filtre après récupération
         docs = query.stream()
 
         all_products = []
@@ -111,7 +108,7 @@ def get_products_api():
 
             all_products.append(p)
 
-        # Pagination manuelle basée sur le dernier ID vu
+        # Pagination manuelle
         start_index = 0
         if last_id:
             for i, p in enumerate(all_products):

@@ -104,7 +104,7 @@
 </div>
 
 <div class="row g-4 mt-2" id="productsContainer">
-    </div>
+</div>
 
 <div class="row g-4 mt-2" id="loadingSkeleton" style="display: none;">
     {% for i in range(4) %}
@@ -118,7 +118,7 @@
     {% endfor %}
 </div>
 
-<div id="scrollSentinel" style="height: 20px;"></div>
+<div id="scrollSentinel" style="height: 50px;"></div>
 
 <script>
     let lastId = null;
@@ -139,6 +139,7 @@
         skeleton.style.display = 'flex';
 
         try {
+            // L'API est appelée avec une limite de 4 côté serveur ou gérée ici
             const response = await fetch(`/api/products?last_id=${lastId || ''}&category=${currentCategory}&search=${currentSearch}`);
             const data = await response.json();
 
@@ -213,7 +214,7 @@
                 `;
                 container.appendChild(productDiv);
 
-                // Animation d'entrée progressive
+                // Animation YouTube-style : apparition progressive
                 setTimeout(() => productDiv.classList.add('show'), index * 100);
 
                 lastId = product.id;
@@ -228,14 +229,13 @@
         }
     }
 
-    // Observer pour le scroll infini
+    // Observer pour déclencher le chargement des 4 suivants dès que le sentinel est visible
     const observer = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting) loadProducts();
     }, { threshold: 0.1 });
 
     observer.observe(document.getElementById('scrollSentinel'));
 
-    // Fonctions globales
     function addToCart(id, title, price, currency, image) {
         let cart = JSON.parse(localStorage.getItem('offranel_cart')) || [];
         if (cart.find(item => item.id === id)) {
@@ -265,6 +265,7 @@
     .btn-outline-orange { color: #FF6B00; border: 1px solid #FF6B00; }
     .btn-outline-orange:hover { background-color: #FF6B00; color: white; }
     .text-orange { color: #FF6B00; }
+    .text-primary { color: #1877F2 !important; }
     ::-webkit-scrollbar { display: none; }
 </style>
 

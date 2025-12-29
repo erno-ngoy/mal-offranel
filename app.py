@@ -85,7 +85,7 @@ def index():
 # --- ROUTE API POUR CHARGEMENT PROGRESSIF (Mis à jour : 4 par 4) ---
 @app.route('/api/products')
 def get_products_api():
-    limit = 4  # Modifié à 4 comme demandé
+    limit = 10
     last_id = request.args.get('last_id')
     category_filter = request.args.get('category', '')
     search_query = request.args.get('search', '').lower()

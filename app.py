@@ -19,12 +19,12 @@ VAPID_PUBLIC_KEY = "BOT0JEWz9-w_eTSqZXlLXewXXq4hT3zvWPFfyb68z-aH80OVc1oX2xvftH4d
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "VOTRE_CLE_PRIVEE_SECRET")
 VAPID_CLAIMS = {"sub": "mailto:admin@offranel.com"}
 
-# --- LISTE DES CATÉGORIES (MISES À JOUR) ---
+# --- LISTE DES CATÉGORIES (CORRESPONDANCE AVEC LE FRONT-END) ---
 CATEGORIES = [
-    "👗 Mode & Vêtements",
-    "📱 Accessoires Téléphones",
-    "🎧 Gadgets & Audio",
-    "📦 Autres"
+    "Mode",
+    "Accessoires",
+    "Gadgets",
+    "Autres"
 ]
 
 # --- INITIALISATION FIREBASE ---
@@ -88,20 +88,28 @@ def index():
         print(f"Erreur popup index: {e}")
 
     try:
-        # Optimisation : on filtre par catégorie directement via Firestore si possible
+        # On récupère tous les produits pour appliquer un filtrage flexible
         products_ref = db.collection('products').order_by('created_at', direction='DESCENDING')
-
-        if category_filter:
-            products_ref = products_ref.where('category', '==', category_filter)
-
         products_stream = products_ref.stream()
+
         products = []
         for doc in products_stream:
             p = doc.to_dict()
             p['id'] = doc.id
-            match_search = search_query in p.get('title', '').lower() if search_query else True
-            if match_search:
-                products.append(p)
+
+            # Logique de filtrage par catégorie
+            if category_filter:
+                # On vérifie si la catégorie du produit contient le filtre (ex: 'Mode' match 'Mode & Vêtements')
+                if category_filter not in p.get('category', ''):
+                    continue
+
+            # Logique de filtrage par recherche
+            if search_query:
+                if search_query not in p.get('title', '').lower():
+                    continue
+
+            products.append(p)
+
     except Exception as e:
         print(f"Erreur Firestore : {e}")
         products = []
@@ -171,7 +179,7 @@ def set_session():
         user_ref.set({
             'name': user_name, 'email': data.get('email'), 'photo': data.get('photo'),
             'role': role, 'last_login': datetime.datetime.now(),
-            'points': 0  # Initialisation des points de parrainage
+            'points': 0
         })
     else:
         role = user_doc.to_dict().get('role', 'user')
@@ -213,7 +221,6 @@ def parrainage():
     uid = session.get('user_id')
     user_doc = db.collection('users').document(uid).get()
     user_data = user_doc.to_dict() if user_doc.exists else {"points": 0}
-    # Lien de parrainage basé sur l'UID
     referral_link = f"{request.host_url}login?ref={uid}"
     return render_template('parrainage.html', points=user_data.get('points', 0), ref_link=referral_link)
 

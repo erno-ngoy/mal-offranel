@@ -164,13 +164,15 @@
 
             data.products.forEach((product, index) => {
                 const productDiv = document.createElement('div');
-                // MODIFICATION : col-12 sur smartphone pour l'affichage un sur l'autre
                 productDiv.className = "col-12 col-md-4 col-lg-3 product-item";
 
                 const imageSrc = (product.images && product.images.length > 0) ? product.images[0] : (product.photo_url || 'https://placehold.co/400x400?text=Aucune+Image');
                 const isOutOfStock = product.in_stock === false;
                 const isAdmin = "{{ session.get('role') }}" === "admin";
                 const isLoggedIn = "{{ session.get('user_id') }}" !== "";
+
+                // Correction bug guillemets : on nettoie le titre pour le passage en paramètre JS
+                const cleanTitle = product.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
                 productDiv.innerHTML = `
                     <div class="card h-100 border-0 shadow-sm position-relative" style="border-radius: 20px; overflow: hidden; ${isOutOfStock ? 'opacity: 0.7;' : ''}">
@@ -204,7 +206,7 @@
                             <div class="d-grid gap-2">
                                 ${isLoggedIn ? `
                                     ${!isOutOfStock ? `
-                                        <button onclick="addToCart('${product.id}', '${product.title.replace(/'/g, "\\'")}', '${product.price}', '${product.currency}', '${imageSrc}')"
+                                        <button onclick="addToCart('${product.id}', '${cleanTitle}', '${product.price}', '${product.currency}', '${imageSrc}')"
                                                 class="btn btn-orange btn-sm rounded-pill fw-bold py-2">
                                             <i class="fas fa-cart-plus me-1"></i> Ajouter au panier
                                         </button>
@@ -212,6 +214,7 @@
                                     <a href="/produit/${product.id}" class="btn btn-outline-orange btn-sm rounded-pill py-2">Détails de l'article</a>
                                 ` : `
                                     <a href="/login" class="btn btn-orange btn-sm rounded-pill fw-bold py-2"><i class="fas fa-lock me-1"></i> Connexion</a>
+                                    <a href="/produit/${product.id}" class="btn btn-outline-orange btn-sm rounded-pill py-2">Détails de l'article</a>
                                 `}
 
                                 ${isAdmin ? `
@@ -290,7 +293,7 @@
 
     /* Optimisation pour Mobile : Un produit par ligne */
     @media (max-width: 768px) {
-        .product-img {
+        .card-img-top {
             height: 300px !important; /* Image plus grande pour mobile */
         }
     }

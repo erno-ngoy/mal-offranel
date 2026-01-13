@@ -1,53 +1,130 @@
 {% extends 'base.html' %}
+
 {% block content %}
+<!-- SEO visible pour Google -->
+<section class="container mt-3">
+    <h1 class="visually-hidden">
+        Connexion Offranel Shop – Boutique en ligne sécurisée
+    </h1>
+    <p class="visually-hidden">
+        Offranel Shop est une boutique en ligne fiable proposant des articles certifiés,
+        un suivi client via WhatsApp et une connexion sécurisée par Google.
+        Connectez-vous pour accéder à votre espace client et passer vos commandes en toute sécurité.
+    </p>
+</section>
+
 <div class="row justify-content-center align-items-center mt-5 animate__animated animate__fadeIn">
     <div class="col-md-5">
-        <div class="glass-card p-5 bg-white shadow-lg text-center" style="border-radius: 30px; border: 1px solid rgba(255,107,0,0.1);">
+        <article class="glass-card p-5 bg-white shadow-lg text-center"
+                 style="border-radius: 30px; border: 1px solid rgba(255,107,0,0.1);"
+                 aria-labelledby="login-title">
+
             <div class="mb-4">
                 <div class="d-inline-block p-4 rounded-circle bg-light mb-3">
-                    <i class="fas fa-shopping-bag fa-3x text-orange"></i>
+                    <i class="fas fa-shopping-bag fa-3x text-orange" aria-hidden="true"></i>
                 </div>
             </div>
 
-            <h2 class="fw-bold mb-2">Offranel Shop 🍊</h2>
-            <p class="text-muted mb-4">Rejoignez notre communauté pour accéder aux meilleurs articles certifiés.</p>
+            <h2 id="login-title" class="fw-bold mb-2">
+                Offranel Shop 🍊
+            </h2>
 
-            <div class="alert alert-info py-2 rounded-pill border-0 small mb-4" style="background-color: rgba(24, 119, 242, 0.1); color: #1877F2;">
-                <i class="fas fa-shield-alt me-2"></i> Connexion sécurisée via Google
+            <p class="text-muted mb-3">
+                Votre boutique en ligne de confiance pour acheter des produits certifiés,
+                profiter d’un service client réactif et suivre vos commandes facilement.
+            </p>
+
+            <p class="small text-muted mb-4">
+                Connectez-vous pour accéder à votre espace personnel, gérer vos commandes,
+                découvrir nos nouvelles offres et bénéficier d’une expérience d’achat sécurisée.
+            </p>
+
+            <div class="alert alert-info py-2 rounded-pill border-0 small mb-4"
+                 style="background-color: rgba(24, 119, 242, 0.1); color: #1877F2;">
+                <i class="fas fa-shield-alt me-2"></i>
+                Connexion sécurisée via Google – rapide et protégée
             </div>
 
-            <button id="googleBtn" class="btn btn-dark w-100 py-3 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center transition-all">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" class="me-3">
+            <button id="googleBtn"
+                    class="btn btn-dark w-100 py-3 rounded-pill fw-bold shadow-sm
+                           d-flex align-items-center justify-content-center transition-all"
+                    aria-label="Se connecter avec Google sur Offranel Shop">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                     width="20"
+                     alt="Logo Google"
+                     class="me-3">
                 Continuer avec Google
             </button>
 
             <div class="mt-4 pt-3 border-top">
-                <p class="small text-muted mb-0">En vous connectant, vous acceptez nos</p>
-                <a href="/a-propos" class="small text-orange text-decoration-none fw-bold">Conditions d'utilisation</a>
+                <p class="small text-muted mb-0">
+                    En vous connectant, vous acceptez nos conditions et notre politique de confidentialité.
+                </p>
+                <a href="/a-propos"
+                   class="small text-orange text-decoration-none fw-bold">
+                    Conditions d'utilisation & À propos
+                </a>
             </div>
-        </div>
+        </article>
 
-        <div class="row mt-4 text-center g-3">
+        <section class="row mt-4 text-center g-3" aria-label="Avantages Offranel Shop">
             <div class="col-4">
                 <i class="fas fa-check-circle text-orange mb-1"></i>
-                <p class="small text-muted" style="font-size: 0.7rem;">Articles Certifiés</p>
+                <p class="small text-muted" style="font-size: 0.7rem;">
+                    Articles Certifiés & Qualité garantie
+                </p>
             </div>
             <div class="col-4">
                 <i class="fas fa-truck text-orange mb-1"></i>
-                <p class="small text-muted" style="font-size: 0.7rem;">Suivi WhatsApp</p>
+                <p class="small text-muted" style="font-size: 0.7rem;">
+                    Livraison suivie et assistance WhatsApp
+                </p>
             </div>
             <div class="col-4">
                 <i class="fas fa-lock text-orange mb-1"></i>
-                <p class="small text-muted" style="font-size: 0.7rem;">Sécurité Totale</p>
+                <p class="small text-muted" style="font-size: 0.7rem;">
+                    Paiements et données 100% sécurisés
+                </p>
             </div>
-        </div>
+        </section>
     </div>
 </div>
 
-<div id="authLoader" class="d-none position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center bg-white opacity-75" style="z-index: 9999;">
+<!-- Fallback SEO sans JavaScript -->
+<noscript>
+    <div class="container mt-4">
+        <p class="text-muted small">
+            Offranel Shop est une boutique en ligne sécurisée.
+            Pour vous connecter et accéder à votre espace client,
+            veuillez activer JavaScript dans votre navigateur.
+        </p>
+    </div>
+</noscript>
+
+<div id="authLoader"
+     class="d-none position-fixed top-0 start-0 w-100 h-100 d-flex flex-column
+            justify-content-center align-items-center bg-white opacity-75"
+     style="z-index: 9999;">
     <div class="spinner-border text-orange" role="status"></div>
-    <p class="mt-3 fw-bold text-orange">Vérification de votre compte...</p>
+    <p class="mt-3 fw-bold text-orange">
+        Vérification sécurisée de votre compte en cours...
+    </p>
 </div>
+
+<!-- Données structurées Google -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "OnlineStore",
+  "name": "Offranel Shop",
+  "description": "Boutique en ligne sécurisée proposant des articles certifiés, un suivi client WhatsApp et une connexion rapide via Google.",
+  "url": "{{ request.url }}",
+  "image": "/static/logo.png",
+  "sameAs": [],
+  "paymentAccepted": "Online Payment",
+  "currenciesAccepted": "USD, CDF"
+}
+</script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -57,7 +134,7 @@
     apiKey: "AIzaSyDp2Wbtj_pUEmeH6B7DKQlOAzaW00jr1dE",
     authDomain: "malaki-offranel.firebaseapp.com",
     projectId: "malaki-offranel",
-    storageBucket: "malaki-offranel.firebasestorage.app",
+    storageBucket: "firebasestorage.app",
     appId: "1:255909746580:web:5b97ab8194520bf783a181"
   };
 

@@ -7,6 +7,9 @@ import os
 import json
 from functools import wraps
 from pywebpush import webpush, WebPushException
+# --- NOUVEAUX IMPORTS POUR LA TIMELINE INTELLIGENTE ---
+import random
+import time
 
 app = Flask(__name__)
 
@@ -67,6 +70,52 @@ def trigger_push_notifications(title, body):
         print(f"Erreur globale Push: {e}")
 
 
+# --- ALGORITHME DE TIMELINE INTELLIGENTE (NOUVEAU) ---
+def get_smart_timeline_products(limit=8):
+    """
+    Récupère les produits et calcule un score unique pour chaque requête.
+    Score = (Timestamp Récence) + (Likes * Poids) + (Facteur Hasard)
+    """
+    try:
+        # Récupération de tous les produits (Firestore stream)
+        docs = db.collection('products').stream()
+        product_list = []
+        current_time_ts = time.time()
+
+        for doc in docs:
+            p = doc.to_dict()
+            p['id'] = doc.id
+
+            # 1. Gestion de la date (Récence)
+            created_at = p.get('created_at')
+            if isinstance(created_at, datetime.datetime):
+                ts = created_at.timestamp()
+            else:
+                ts = current_time_ts - 31536000  # Il y a 1 an
+
+            # 2. Gestion de la popularité (Likes)
+            likes = int(p.get('likes', 0))
+            LIKE_WEIGHT = 7200  # 1 like = 2 heures de bonus temporel
+
+            # 3. Facteur de Hasard (Entropie)
+            random_factor = random.uniform(0.95, 1.05)
+
+            # Calcul du Score Final
+            base_score = ts + (likes * LIKE_WEIGHT)
+            final_score = base_score * random_factor
+
+            p['_smart_score'] = final_score
+            product_list.append(p)
+
+        # Tri décroissant par score intelligent
+        smart_sorted_products = sorted(product_list, key=lambda x: x['_smart_score'], reverse=True)
+        return smart_sorted_products[:limit]
+
+    except Exception as e:
+        print(f"Erreur Smart Timeline: {e}")
+        return []
+
+
 # --- ROUTES UTILISATEURS ---
 
 @app.route('/')
@@ -79,13 +128,35 @@ def index():
     except Exception as e:
         print(f"Erreur popup index: {e}")
 
-    return render_template('index.html', categories=CATEGORIES, popup=popup_data)
+    category_filter = request.args.get('category')
+    search_query = request.args.get('search')
+    limit_param = request.args.get('limit', default=8, type=int)
+
+    products_to_display = []
+
+    if category_filter or search_query:
+        try:
+            query = db.collection('products').order_by('created_at', direction='DESCENDING')
+            docs = query.stream()
+            for doc in docs:
+                p = doc.to_dict()
+                p['id'] = doc.id
+                if category_filter and category_filter not in p.get('category', ''):
+                    continue
+                if search_query and search_query.lower() not in p.get('title', '').lower():
+                    continue
+                products_to_display.append(p)
+        except Exception as e:
+            print(f"Erreur filtre index: {e}")
+    else:
+        products_to_display = get_smart_timeline_products(limit=limit_param)
+
+    return render_template('index.html', categories=CATEGORIES, popup=popup_data, products=products_to_display)
 
 
-# --- ROUTE API POUR CHARGEMENT PROGRESSIF (Mis à jour : 4 par 4) ---
 @app.route('/api/products')
 def get_products_api():
-    limit = 4  # Modifié pour charger 4 par 4 comme demandé
+    limit = 4
     last_id = request.args.get('last_id')
     category_filter = request.args.get('category', '')
     search_query = request.args.get('search', '').lower()
@@ -93,22 +164,16 @@ def get_products_api():
     try:
         query = db.collection('products').order_by('created_at', direction='DESCENDING')
         docs = query.stream()
-
         all_products = []
         for doc in docs:
             p = doc.to_dict()
             p['id'] = doc.id
-
-            # Filtrage Catégorie
             if category_filter and category_filter not in p.get('category', ''):
                 continue
-            # Filtrage Recherche
             if search_query and search_query not in p.get('title', '').lower():
                 continue
-
             all_products.append(p)
 
-        # Pagination manuelle corrigée
         start_index = 0
         if last_id and last_id != 'null' and last_id != '':
             for i, p in enumerate(all_products):
@@ -117,14 +182,58 @@ def get_products_api():
                     break
 
         paginated_products = all_products[start_index: start_index + limit]
-
         return jsonify({
             "products": paginated_products,
             "has_more": len(all_products) > (start_index + limit)
         })
     except Exception as e:
         print(f"Erreur API: {e}")
-        return jsonify({"error": True, "message": "Problème de connexion au serveur"}), 500
+        return jsonify({"error": True, "message": str(e)}), 500
+
+
+@app.route('/api/products-smart')
+def get_smart_products_api():
+    try:
+        limit = request.args.get('limit', default=8, type=int)
+        smart_products = get_smart_timeline_products(limit=limit)
+        return jsonify({"status": "success", "count": len(smart_products), "products": smart_products})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# --- NOUVELLE ROUTE : GESTION DES LIKES ---
+@app.route('/api/like/<product_id>', methods=['POST'])
+@login_required
+def like_product(product_id):
+    try:
+        user_id = session.get('user_id')
+        product_ref = db.collection('products').document(product_id)
+        product_doc = product_ref.get()
+
+        if product_doc.exists:
+            data = product_doc.to_dict()
+            liked_by = data.get('liked_by', [])
+            current_likes = int(data.get('likes', 0))
+
+            if user_id in liked_by:
+                # Retirer le like (Unlike)
+                new_likes = max(0, current_likes - 1)
+                product_ref.update({
+                    'likes': new_likes,
+                    'liked_by': firestore.ArrayRemove([user_id])
+                })
+                return jsonify({"status": "unliked", "count": new_likes})
+            else:
+                # Ajouter le like
+                new_likes = current_likes + 1
+                product_ref.update({
+                    'likes': new_likes,
+                    'liked_by': firestore.ArrayUnion([user_id])
+                })
+                return jsonify({"status": "liked", "count": new_likes})
+        return jsonify({"status": "error", "message": "Produit introuvable"}), 404
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.route('/login')
@@ -323,6 +432,8 @@ def publier():
                 'description': data.get('description'),
                 'images': data.get('images'),
                 'in_stock': True,
+                'likes': 0,
+                'liked_by': [],
                 'author_id': session.get('user_id'),
                 'author_name': session.get('name'),
                 'author_photo': session.get('photo'),
